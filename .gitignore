@@ -1,0 +1,4 @@
+images/*
+opt_results/*
+*.RData
+*.RDataTmp*
