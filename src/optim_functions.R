@@ -51,14 +51,15 @@ FW = function(X, lambda, beta, alpha, delta_Y, delta_Z){
         return(rowSums(result))  # Sum across rows to keep it as a vector
         }
         gamma <- 2/(2+k)
-        theta_k1 <- SGD(X, thetas[k+1,], psi, lr)
-        thetas[k+2,] = theta_k1
+        psi_opt <- optim(function(psi){L(psi, X,lambda, beta, alpha, centered, delta_Y, delta_Z)}, par=psi(X), method="L-BFGS-B", lower=-1, upper=1)$par
+        theta_opt<- glm(logit((psi_opt +1)/2)~ X -1 )$coef %>% as.matrix()
+        thetas[k+2,] = theta_opt
 
         # if (k > 0 && sum(abs(thetas[k+2,]-thetas[k+1,])) < tol) {
         #     return(list(theta = psi_terms, obj_func_vect = obj_func_vect[1:(k + 1)]))
         # }
 
-        psi_k1 <- function(X) { psi_theta(X, theta_k1) }
+        psi_k1 <- function(X) { psi_theta(X, theta_opt) }
     
         # Store the new psi function without deep recursion
         psi_terms <- lapply(psi_terms, function(p) {

@@ -44,12 +44,12 @@ R_p <- function(psi, X, delta_Y){
 
 # Constraint function
 S_p <- function(psi, X, beta, alpha, centered, delta_Z){
-    out <- mean(sigma_beta(psi, beta, centered) * delta_Z(X)) - alpha
+    out <- mean(sigma_beta(psi,X, beta, centered) * delta_Z(X)) - alpha
     return(out)
 }
 
 # Objective function 
-L <- function(psi, X,lambda, beta, alpha, delta_Y, delta_Z){
+L <- function(psi, X,lambda, beta, alpha, centered, delta_Y, delta_Z){
     out <- R_p(psi, X,delta_Y) + lambda*S_p(psi, X, beta, alpha, centered, delta_Z)
     return(out)
 }
