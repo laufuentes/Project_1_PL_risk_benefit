@@ -16,23 +16,6 @@ source("src/optim_functions.R")
 source("src/synthetic_data.R")
 source("src/estimators.R")
 
-Jfold<- 5
-technique <- "cv.glmnet"
-
-c_data <- expand.grid(m=c(1,2,3),a=c(0,1))
-c_data$c <- c(0,-1,-1, 1,1,1)
-
-gdot1 <- function(X){rep(0, dim(X)[1])}
-gdot2 <-function(X){rep(1, dim(X)[1])}
-gdot3 <- function(X){rep(1,dim(X)[1])}
-
-gdot_functs <- list(gdot1, gdot2, gdot3)
-
-Hm<- function(a,x,m,c, gdot_functs){
-    gm_dot <- gdot_functs[[m]]
-    return(c_data$c[which(m==m & a==a)]*gm_dot(mu_nj(a,x)))
-}
-
 # Step 1: Obtain initial estimates of nuisance parameters
 ## Partition dataset 
 s<- partition_data(Jfold, df)
@@ -45,8 +28,8 @@ nu.hat.nj <- initial_nparams[[4]]
 
 for (fold in Jfold){
     e.nj <- e.hat.nj[[fold]]
-    mu.nj <- mu1.hat.nj[[fold]]
-    nu.nj <- nu1.hat.nj[[fold]]
+    mu.nj <- mu.hat.nj[[fold]]
+    nu.nj <- nu.hat.nj[[fold]]
     for (beta in B){
 
         for (lambda in L){

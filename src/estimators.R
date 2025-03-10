@@ -237,27 +237,38 @@ compute_propensity <- function(s, X, Treatment, technique){
 #   return(tau_DR)
 # }
 
-
 debias_procedure <- function(X, outcome, h_functs, e_nj, f_nj){
+  condition_outcome <- all(outcome %in% c(0,1))
+
   varphi_k <- function(x) x
 
   # 1- Construct varphi_hat
   varphi_hat <- function(a,x){
-    h_functs[[1]]*varphi_k(x)
-    h_functs[[2]]*varphi_k(x)
+    c(h_functs[[1]](a,x)*varphi_k(x), h_functs[[2]](a,x)*varphi_k(x))
   }
 
-  # 2- Choose link function and obtain regresion coefficients
-  if(all(outcome %in% c(0,1))){
-    g <- function(x){logit(x)}
-    g_bar <- function(x){expit(x)}
+  # 2 - 
+  # 2.1 - Choose link function and obtain regresion coefficients
+  if(condition_outcome){
+    g <- function(x){as.matrix(logit(x))}
+    g_bar <- function(x){as.matrix(expit(x))}
 
-    mod <- glm(outcome ~ varphi_hat(a,x), offset=g(f_nj(a,x)), weight=(1/e_nj(a,x)))
+    mod <- glm(outcome ~ varphi_hat(a,X), offset=g(f_nj(a,x)), weight=(1/e_nj(a,X)))
+    b_n <- mod$coef
   }
   else{
     g<- function(x){x}
     g_bar <- function(x){1/x}
+
+    mod <- lm(outcome ~ varphi_hat(a,X), offset=g(f_nj(a,x)), weight=(1/e_nj(a,X)))
+    b_n <- mod$coef
   }
+
+  # 2.2 - Estimate beta 
+
+
+
+  
   # Return debiased out-of fold outcome regression estimator
   f_nj.star <- function(a, x){g_bar(g(f_nj(a,x)) + t(varphi_hat(a,x))%*%beta_nj)}
 }
