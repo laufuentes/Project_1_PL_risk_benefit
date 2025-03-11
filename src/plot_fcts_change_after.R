@@ -137,6 +137,7 @@ policy_value_plot<-  function(results,type_simu, lambda_opt, beta_opt, option){
 
 gamma_plot_funct <- function(results_optimal_x, lambda_value, beta_value, df, option, centered) {
   policy <- sigma_beta(results_optimal_x, beta, centered)
+  policy<- sigma_beta(psi_, X, beta, centered)
   # Initialize base plot
   if(option[1]=="IVF"){
     p <- ggplot(
@@ -161,14 +162,14 @@ gamma_plot_funct <- function(results_optimal_x, lambda_value, beta_value, df, op
     }
   }else{
     p2 <- ggplot(
-      cbind(df, treat_proba = policy_2),
+      cbind(df, treat_proba = policy),
       aes(x = X1, y = X2, color = treat_proba)
     ) +
       geom_point(alpha = 0.5) +
       scale_color_gradient2(low = "blue", mid = "white", high = "red", 
                             midpoint = 0.5, limits = c(0, 1), 
                             oob = scales::squish) +
-      labs(title =  bquote(lambda == .(5) ~ "," ~ beta == .(0.5))) +
+      labs(title =  bquote(lambda == .(lambda) ~ "," ~ beta == .(beta))) +
       theme_minimal() +
       theme(legend.position = "right")
   }

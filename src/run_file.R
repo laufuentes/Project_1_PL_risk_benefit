@@ -10,12 +10,13 @@ library(locfit)
 library(madness)
 
 source("src/estimators.R")
+source("src/tool_box.R")
 source("src/objective_functions.R")
-source("src/optim_functions.R")
+source("src/optim_functions_fct.R")
 source("src/synthetic_data.R")
 
 n <- 1e3
-setting <- "Other_2"
+setting <- "Other_1"
 option <- option_det(setting, "_")
 centered <- TRUE
 epsilon <- 0.03

@@ -96,6 +96,7 @@ data_gen <- function(n, option){
 }
 
 delta_Y <- function(X){
+  n <- nrow(X)
   # Access individual parameters
   if(option[1]=="IVF"){
     u <- 10
@@ -124,6 +125,7 @@ delta_Y <- function(X){
 }
 
 delta_Z <- function(X){
+  n <- nrow(X)
   theta_Z <- c(-0.009,0,-0.09,0,0,0,0)
   beta.0<- 1
   if(option[1]=="IVF"){

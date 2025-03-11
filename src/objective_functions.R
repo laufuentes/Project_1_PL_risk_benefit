@@ -54,6 +54,7 @@ L <- function(psi, X,lambda, beta, alpha, centered, delta_Y, delta_Z){
     return(out)
 }
 
+
 policy_values <- function(psi, X,counterfactual_outcomes,beta,centered,alpha){
   sigma_psi <- sigma_beta(psi, X, beta, centered)
   policy <- rbinom(nrow(X), 1, sigma_psi)
