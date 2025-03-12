@@ -34,17 +34,17 @@ data_gen <- function(n, option){
     
     # Covariates 
     ## basic characteristics 
-    height <- rnorm(n, mean=163, sd=7)
-    age<- as.integer(runif(n, min=18,max=60))
-    bmi <- rnorm(n,21.75, sd=3)
+    X.height <- rnorm(n, mean=163, sd=7)
+    X.age<- as.integer(runif(n, min=18,max=60))
+    X.bmi <- rnorm(n,21.75, sd=3)
     
     ## diseases
-    diabetes<- rbinom(n,1,p=ifelse(bmi>25, 0.2,4.7*1e-2))
-    cancer <- rbinom(n,1, p=1e-2)
-    hyperthrd <- rbinom(n,1, p=2*1e-2)
-    hypothrd <- rbinom(n,1,p=ifelse(age>60,1*1e-2, 3*1e-2))
+    X.diabetes<- rbinom(n,1,p=ifelse(X.bmi>25, 0.2,4.7*1e-2))
+    X.cancer <- rbinom(n,1, p=1e-2)
+    X.hyperthrd <- rbinom(n,1, p=2*1e-2)
+    X.hypothrd <- rbinom(n,1,p=ifelse(X.age>60,1*1e-2, 3*1e-2))
     
-    X <-data.frame(height,age,bmi,diabetes, cancer, hyperthrd, hypothrd)
+    X <-data.frame(X.height,X.age,X.bmi,X.diabetes, X.cancer, X.hyperthrd, X.hypothrd)
     
     # RCT setting
     Treatment <- rbinom(n,1,p=0.5) # Random treatment allocation

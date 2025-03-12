@@ -135,20 +135,19 @@ policy_value_plot<-  function(results,type_simu, lambda_opt, beta_opt, option){
   ggsave(paste0("images/",type_simu,"/beta_evol_",option[1],"_",option[2],".pdf"),beta_evol)
 }
 
-gamma_plot_funct <- function(results_optimal_x, lambda_value, beta_value, df, option, centered) {
-  policy <- sigma_beta(results_optimal_x, beta, centered)
-  policy<- sigma_beta(psi_, X, beta, centered)
+gamma_plot_funct <- function(psi, X, lambda, beta, df, option, centered) {
+  policy<- sigma_beta(psi, X, beta, centered)
   # Initialize base plot
   if(option[1]=="IVF"){
     p <- ggplot(
-      cbind(df, treat_proba = policy),
+      cbind(df, treat_proba = policy_FW),
       aes(x = X.height, y = X.bmi, color = treat_proba)
     ) +
       geom_point(alpha = 0.5) +
       scale_color_gradient2(low = "blue", mid = "white", high = "red", 
                             midpoint = 0.5, limits = c(0, 1), 
                             oob = scales::squish) +
-      labs(title =  bquote(lambda == .(lambda_value) ~ "," ~ beta == .(beta_value))) +
+      labs(title =  bquote(lambda == .(lambda) ~ "," ~ beta == .(beta))) +
       theme_minimal() +
       theme(legend.position = "right")
     

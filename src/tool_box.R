@@ -6,3 +6,6 @@ option_det <- function(string, split_char){
   res<- strsplit(string, split = split_char)
   return(res[[1]])
 }
+
+expit <- plogis
+logit <- qlogis

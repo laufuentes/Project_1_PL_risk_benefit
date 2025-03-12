@@ -4,8 +4,8 @@ library(parallel)
 # Probability of treating function
 sigma_beta <- function(psi, X, beta, centered) {
     c_beta <- 1 / log((1 + exp(beta)) / (1 + exp(-beta)))
-    if (centered == TRUE) {
-        cent <- 0.5 - c_beta * log((1 + exp(beta * 0)) / (1 + exp(-beta)))
+    if (centered) {
+        cent <- 0.5 - c_beta * log(2 / (1 + exp(-beta)))
     } else {
         cent <- 0
     }
@@ -13,7 +13,7 @@ sigma_beta <- function(psi, X, beta, centered) {
     return(out)
 }
 
-# Derivative of sigma_beta with respect to psi
+
 sigma_beta_prime <- function(psi, X, beta, centered){
     if (!is.matrix(X)) {
     X <- as.matrix(X)
@@ -21,9 +21,7 @@ sigma_beta_prime <- function(psi, X, beta, centered){
     c_beta <- 1 / log(
       (1 + exp(beta)) / (1 + exp(-beta))
       )
-    out <- c_beta * log(
-      (beta*exp(beta*psi(X)))/(1+ exp(beta*psi(X)))
-      )
+    out <- c_beta *(beta*exp(beta*psi(X)))/(1+ exp(beta*psi(X)))
     return(out)
 }
 
@@ -34,6 +32,10 @@ psi_theta <- function(X, theta){
   }
   out <- 2*expit(X%*%theta) -1
   return(out)
+}
+
+expit_prime <- function(X){
+  expit(X)*(1-expit(X))
 }
 
 # Risk function for CATE
@@ -52,6 +54,10 @@ S_p <- function(psi, X, beta, alpha, centered, delta_Z){
 L <- function(psi, X,lambda, beta, alpha, centered, delta_Y, delta_Z){
     out <- R_p(psi, X,delta_Y) + lambda*S_p(psi, X, beta, alpha, centered, delta_Z)
     return(out)
+}
+
+gradL <- function(psi, X, lambda, beta, centered, delta_Y, delta_Z){
+  2*(psi(X) - delta_Y(X)) + lambda*sigma_beta_prime(psi,X, beta, centered)*delta_Z(X)
 }
 
 
