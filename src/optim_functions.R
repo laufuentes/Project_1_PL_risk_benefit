@@ -69,6 +69,7 @@ SGD <- function(X, theta_current, lambda, beta, centered, psi, lr, verbose){
     x <- X[s,]
     Lprime <- gradL(psi, x, lambda, beta, centered, delta_Y, delta_Z) 
     dL_dtheta <-  t(t(x)%*%(as.matrix(2*expit(x%*%t(theta_current))* (1-expit(x%*%t(theta_current))))*Lprime) )
+    if(sum(dL_dtheta^2)<tol){break}
     if (verbose) {
       if (i%%100==0){
         value <- mean(Lprime*(2*expit(x%*%t(theta_current))-1))
@@ -95,13 +96,14 @@ SGD <- function(X, theta_current, lambda, beta, centered, psi, lr, verbose){
 #' @param alpha A numeric scalar (constraint tolerance).
 #' @param delta_Y A function of \code{X} that determines the difference between primary counterfactual outcomes.
 #' @param delta_Z A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param precision A numeric scalar that determines the convergence precision desired.
 #' @param verbose A logical value indicating whether to print progress updates. Default is \code{TRUE}.
 #'
 #' @return A numeric matrix containing the optimized parameter \code{theta},  
 #'         where each row represents the k-th \code{theta} solution at iteration \code{k}.
 #' @export
-FW <- function(X, lambda, beta, alpha, delta_Y, delta_Z, verbose=TRUE) {
-    K <- 50
+FW <- function(X, lambda, beta, alpha, delta_Y, delta_Z, precision, verbose=TRUE) {
+    K <- as.integer(1/precision)
     tol <- 1e-5
     lr <-0.01
     theta <- matrix(runif(ncol(X), -5, 5), ncol=ncol(X), nrow=1)

@@ -23,6 +23,7 @@ n <- 1e3 # number of individuals
 alpha <- 0.1 # constraint tolerance
 centered <- TRUE # centering of policy
 epsilon <- 0.03 # early stopping parameter 
+precision <- 0.025
 
 ##  Data generation parameters
 setting <- "Other_1" # setting selected
@@ -44,7 +45,7 @@ X <- df %>% select(starts_with("X")) %>% as.matrix()
 
 lambda <- 1
 beta <- 0.5
-res <- FW(X, lambda, beta, alpha, delta_Y, delta_Z)
+res <- FW(X, lambda, beta, alpha, delta_Y, delta_Z, precision)
 
 psi<- make_psi(res)
 policy_FW <- sigma_beta(psi, X, beta, centered)
