@@ -69,9 +69,9 @@ SGD <- function(X, theta_current, lambda, beta, centered, psi, lr, verbose){
     x <- X[s,]
     Lprime <- gradL(psi, x, lambda, beta, centered, delta_Y, delta_Z) 
     dL_dtheta <-  t(t(x)%*%(as.matrix(2*expit(x%*%t(theta_current))* (1-expit(x%*%t(theta_current))))*Lprime) )
-    if(sum(dL_dtheta^2)<tol){break}
     if (verbose) {
       if (i%%100==0){
+        if(mean(t(t(X)%*%(as.matrix(2*expit(X%*%t(theta_current))* (1-expit(X%*%t(theta_current))))*gradL(psi, X, lambda, beta, centered, delta_Y, delta_Z) ) ))<tol){break}
         value <- mean(Lprime*(2*expit(x%*%t(theta_current))-1))
         msg <- sprintf("SGD: iteration %i, value %f", i, value)
         message(msg)
