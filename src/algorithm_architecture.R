@@ -4,17 +4,18 @@ library(optimx)
 library(lbfgs)
 library(boot)
 library(graphics)
-library(fields)
 library(ggplot2)
 library(grid)
 library(rgenoud)
 library(locfit)
 library(numDeriv)
 
-source("src/objective_function.R")
+source("src/objective_functions.R")
 source("src/optim_functions.R")
 source("src/synthetic_data.R")
 source("src/estimators.R")
+
+
 
 # Step 1: Obtain initial estimates of nuisance parameters
 ## Partition dataset 
@@ -34,8 +35,7 @@ for (fold in Jfold){
 
         for (lambda in L){
             # Step 2: Estimation of objective function in j-th fold
-            Delta_mu_nj <- Algo_debias(X, e_nj, mu_nj)
-            Delta_nu_nj <- Algo_debias(X, e_nj, nu_nj)
+            psi_debias <- Algo_debias(X, e.nj, mu.nj, nu.nj)
 
             L_nj <- function(psi, X, lambda, beta, Delta_mu_nj,Delta_nu_nj ){
                 R_p(psi, X,Delta_mu_nj) + lambda*S_p(psi, X,beta, Delta_nu_nj)

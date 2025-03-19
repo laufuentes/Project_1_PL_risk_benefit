@@ -183,62 +183,144 @@ compute_propensity <- function(s, X, Treatment, technique){
   return(pi.hat_nj)
 }
 
+J_funct <- function(e_n, mu_n, nu_n,psi, y, a, x, xi,lambda, beta,centered){
+  inner<- (1/e_n(a,x))*((y-mu_n(a,x)-(2*a -1)*psi(x))^2 +lambda*(xi -nu_n(a,x) - (2*a-1)*sigma_beta(psi, X, beta, centered))^2)
+  return(mean(inner))
+}
 
-# dr_learner <- function(df, primary){
-#   n <- nrow(df)
-#   X <- df%>%select(starts_with("X"))
-#   Treatment <- df$Treatment
-#   Y <- df$Y
+gradj <- function(e_n, mu_n, nu_n, y, a, x, xi,lambda, beta,centered){
+  out <- (1/e_n(a,x)) * (
+    (2*a -1)^2 * (
+      2*psi(x) - 2*((y-mu_n(a,x))/(2*a-1)) 
+      +lambda * (
+        2*sigma_beta(psi, x,beta,centered)*sigma_beta_prime(psi,x,beta)
+        - 2*((xi-nu_n(a,x))/(2*a-1))*sigma_beta_prime(psi,x,beta)
+      )
 
-#   tau_DR <- rep(0, n)
-#   s<- df$s
-#   pi.hat<- df$pi.hat
-#   if(primary==TRUE){
-#     mu1.hat<- df$mu1.hat
-#     mu0.hat<- df$mu0.hat
-#   }else{
-#     mu1.hat<- df$nu1.hat
-#     mu0.hat<- df$nu0.hat
-#   }
-  
+    )
+  )
+  return (out)
+}
 
-#   if (!is.matrix(X)) {
-#     X <- as.matrix(X)
-#   }
 
-#   if (!is.matrix(Y)) {
-#     Y <- as.matrix(Y)
-#   }
+#' Stochastic Gradient Descent (SGD)
+#'
+#' Performs stochastic gradient descent to optimize the parameters.
+#'
+#' @param X A numeric matrix of size n x d (input data).
+#' @param theta_current A numeric matrix of size 1 x d (intialization for parameter to estimate).
+#' @param lambda A numeric scalar controlling the weight of the constraint function in the objective.
+#' @param beta A numeric scalar controlling the sharpness of the probability function.
+#' @param centered A logical value indicating whether to center the policy.
+#' @param psi A function that takes X as input.
+#' @param lr A numeric scalar (learning rate).
+#' @param verbose A logical value indicating whether to print progress.
+#'
+#' @return A numeric matrix of size 1 x d (optimized parameters).
+#' @export
+SGD_estimation <- function(df, theta_current, lambda, beta, centered, psi, verbose){
+  n <- nrow(df)
+  max_iter <- 1e3
+  tol <- 1e-3
+  lr <- 0.01
 
-#   pseudo <- (
-#     (
-#       Treatment - pi.hat
-#       ) / (
-#         pi.hat * (1 - pi.hat)
-#         )) * 
-#         (
-#           Y - Treatment * mu1.hat - (1 - Treatment) * mu0.hat
-#           ) + mu1.hat - mu0.hat
+  batch_size <- as.integer(n / 3)
 
-#   dr_lr <- mclapply(unique(s), function(fold){
-#     idx <- which(s==fold)
+  for(i in 1:max_iter){
+    s <- sample.int(n, batch_size)
+    data <- df[s,]
+    y <- matrix(data$Y)
+    x <- data %>% select(starts_with("X")) %>% as.matrix()
+    a <- matrix(data$Treatment)
+    xi<- matrix(ifelse(data$Z==1,1,0))
 
-#   tau.hat <- predict(
-#     cv.glmnet(X[-idx, ], pseudo[-idx]), 
-#     newx = X[idx,], 
-#     s = "lambda.min")
+    theta_x <- x %*% t(theta_current)
+    expit_theta_x <- expit(theta_x)
+    expit_diff <- 2 * expit_theta_x * (1 - expit_theta_x)
+
+    Jprime <- gradj(e_n, mu_n, nu_n, y, a, x, xi, lambda,beta, centered)
+    dJ_dtheta <- t(t(x) %*% (expit_diff * Jprime))
+
+    if (verbose && i %% 100 == 0) {
+            # theta_X <- X %*% t(theta_current)
+            # expit_theta_X_full <- expit(theta_X)
+            # expit_Diff <- 2 * expit_theta_X_full * (1 - expit_theta_X_full)
+
+            # JprimeX <- gradj(e_n, 
+            # mu_n, 
+            # nu_n, 
+            # matrix(df$Y), 
+            # matrix(df$Treatment),
+            # df %>% select(starts_with("X")) %>% as.matrix(),  
+            # matrix(ifelse(df$Z==1,1,0)),
+            # beta, centered)
+
+            # Whole_Grad <- t(t(X) %*% (expit_Diff * JprimeX))
+
+            if (mean(dJ_dtheta) < tol) {
+                break
+            }
+            value <- mean(Jprime * (2 * expit_theta_x - 1))
+            msg <- sprintf("SGD: iteration %i, value %f", i, value)
+            message(msg)
+    }
+
+    theta_current <- theta_current - lr * dJ_dtheta
+    }
+    return(theta_current)
+}
+
+#' Frank-Wolfe Algorithm
+#'
+#' Implements the Frank-Wolfe optimization algorithm to iteratively refine a convex  
+#' combination function \code{psi}. At each iteration, a new solution \code{theta}  
+#' is computed via stochastic gradient descent (SGD) and added to the convex combination  
+#' in the form \eqn{2 \cdot \text{expit}(X \theta) - 1}.
+#'
+#' @param X A numeric matrix (input data).
+#' @param lambda A numeric scalar controlling the weight of the constraint function in the objective.
+#' @param beta A numeric scalar controlling the sharpness of the probability function.
+#' @param alpha A numeric scalar (constraint tolerance).
+#' @param delta_Y A function of \code{X} that determines the difference between primary counterfactual outcomes.
+#' @param delta_Z A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param precision A numeric scalar that determines the convergence precision desired.
+#' @param verbose A logical value indicating whether to print progress updates. Default is \code{TRUE}.
+#'
+#' @return A numeric matrix containing the optimized parameter \code{theta},  
+#'         where each row represents the k-th \code{theta} solution at iteration \code{k}.
+#' @export
+FW_estimation <- function(df, lambda,  beta, centered, e_n, mu_n, nu_n,precision, verbose=TRUE) {
+    K <- as.integer(1/precision)
+    tol <- 1e-5
+
+    Y <- matrix(df$Y)
+    X <- df %>% select(starts_with("X")) %>% as.matrix()
+    A <- matrix(df$Treatment)
+    Xi<- matrix(ifelse(df$Z==1,1,0))
+    d <- ncol(X)
+
+    theta_fix <- matrix(runif(d, -5, 5), ncol=d, nrow=1)
+    theta <- theta_fix
     
-#     list(idx, tau.hat)
-#   }, 
-#   mc.cores = detectCores(), 
-#   mc.preschedule = FALSE)
+    for (k in 0:K){
+      if (k==1){theta <- matrix(theta[2,], nrow=1, ncol=d)}
 
-#   tau_DR<- tau_DR[unlist(lapply(dr_lr, `[[`, 1))] <- unlist(lapply(dr_lr, `[[`, 2))
-#   return(tau_DR)
-# }
+      psi <- make_psi(theta)
+        
+        if (verbose && k %% 10 == 0) {
+            msg <- sprintf("FW: iteration %i, value %f", k, J_funct(e_n, mu_n, nu_n,psi, Y, A, X, Xi,lambda, beta,centered))
+            message(msg)
+        }
+        theta_opt <- SGD_estimation(df, theta_fix, lambda, beta, centered, psi, (verbose && k %% 10 == 0))
+        
+        theta <- rbind(theta, theta_opt)
+    }
+    return(theta)
+}
 
-debias_procedure <- function(X, outcome, h_functs, e_nj, f_nj){
-  condition_outcome <- all(outcome %in% c(0,1))
+
+
+debias_procedure <- function(X, outcome, h_functs, e_nj, mu_nj,nu_nj){
 
   varphi_k <- function(x) x
 
@@ -249,26 +331,18 @@ debias_procedure <- function(X, outcome, h_functs, e_nj, f_nj){
 
   # 2 - 
   # 2.1 - Choose link function and obtain regresion coefficients
-  if(condition_outcome){
-    g <- function(x){as.matrix(logit(x))}
-    g_bar <- function(x){as.matrix(expit(x))}
+    g1 <-  function(x)x
+    g_bar1 <- function(x)1/x
 
-    mod <- glm(outcome ~ varphi_hat(a,X), offset=g(f_nj(a,x)), weight=(1/e_nj(a,X)))
-    b_n <- mod$coef
-  }
-  else{
-    g<- function(x){x}
-    g_bar <- function(x){1/x}
+    g2 <- function(x){as.matrix(logit(x))}
+    g_bar2 <- function(x){as.matrix(expit(x))}
 
-    mod <- lm(outcome ~ varphi_hat(a,X), offset=g(f_nj(a,x)), weight=(1/e_nj(a,X)))
-    b_n <- mod$coef
-  }
-
-  # 2.2 - Estimate beta 
-
-
-
+    # 2.2 - Estimate psi_debias 
+    
   
   # Return debiased out-of fold outcome regression estimator
-  f_nj.star <- function(a, x){g_bar(g(f_nj(a,x)) + t(varphi_hat(a,x))%*%beta_nj)}
+  mu_nj.star <- function(a, x){g_bar1(g1(f_nj(a,x)) + t(varphi_hat(a,x))%*%psi(x))}
+  nu_nj.star <- function(a, x){g_bar2(g2(f_nj(a,x)) + t(varphi_hat(a,x))%*%psi(x))}
 }
+
+
