@@ -27,20 +27,31 @@ make_psi <- function(Theta) {
   ## ------------
   ## lazy version
   ## ------------
-  psi <- function(x) {
+  psi_iterative <- function(x) {
     # x: n x d
-    psi_x <- rep(0, nrow(x))
     Theta_x <- x %*% t(Theta)
+    psi_x <- 2*expit(Theta_x[,1])-1
+    weights <- rep(0,K)
+    weights[1] <- 1
     # Theta_x: n x K
-    for (k in 1:ncol(Theta_x)) {
+    for (k in 1:(ncol(Theta_x)-1)){
       gamma <- 2/(2+k)
-      psi_x <- (1-gamma) * psi_x + gamma * (2 * expit(Theta_x[, k])-1)
+      weights[1:k] <- weights[1:k]*(1-gamma)
+      weights[k+1] <- gamma
+      psi_x <- (1-gamma) * psi_x + gamma * (2 * expit(Theta_x[, k+1])-1)
     }
+    return(psi_x)
+  }
+
+  psi <- function(x){
+    k <- nrow(Theta)
+    Gamma <- matrix((2 / ((k + 1) * k)) * (1:k), ncol = 1)
+    sigma_theta_x <- 2 * expit(x %*% t(Theta)) - 1 #only use the first k thetas.
+    psi_x <- sigma_theta_x %*% Gamma
     return(psi_x)
   }
   return(psi)
 }
-
 
 #' Stochastic Gradient Descent (SGD)
 #'
@@ -57,28 +68,46 @@ make_psi <- function(Theta) {
 #'
 #' @return A numeric matrix of size 1 x d (optimized parameters).
 #' @export
-SGD <- function(X, theta_current, lambda, beta, centered, psi, lr, verbose){
+SGD <- function(X, theta_current, lambda, beta, centered, psi, verbose){
   n <- nrow(X)
   max_iter <- 1e3
   tol <- 1e-3
+  lr <- 0.01
+
   if (!is.matrix(X)){
     X <- as.matrix(X)
   }
+
+  batch_size <- as.integer(n / 3)
+
   for(i in 1:max_iter){
-    s <- sample(1:n, as.integer(n/3))
+    s <- sample.int(n, batch_size)
     x <- X[s,]
-    Lprime <- gradL(psi, x, lambda, beta, centered, delta_Y, delta_Z) 
-    dL_dtheta <-  t(t(x)%*%(as.matrix(2*expit(x%*%t(theta_current))* (1-expit(x%*%t(theta_current))))*Lprime) )
-    if (verbose) {
-      if (i%%100==0){
-        if(mean(t(t(X)%*%(as.matrix(2*expit(X%*%t(theta_current))* (1-expit(X%*%t(theta_current))))*gradL(psi, X, lambda, beta, centered, delta_Y, delta_Z) ) ))<tol){break}
-        value <- mean(Lprime*(2*expit(x%*%t(theta_current))-1))
-        msg <- sprintf("SGD: iteration %i, value %f", i, value)
-        message(msg)
-      } 
-    } 
-    #if (sum(dL_dtheta^2) < tol) {break}
-      theta_current <- theta_current - lr * dL_dtheta
+
+    theta_x <- x %*% t(theta_current)
+    expit_theta_x <- expit(theta_x)
+    expit_diff <- 2 * expit_theta_x * (1 - expit_theta_x)
+
+    Lprime <- gradL(psi, x, lambda, beta, centered, delta_Y, delta_Z)
+    dL_dtheta <- t(t(x) %*% (expit_diff * Lprime))
+
+    if (verbose && i %% 100 == 0) {
+            theta_X <- X %*% t(theta_current)
+            expit_theta_X_full <- expit(theta_X)
+            expit_Diff <- 2 * expit_theta_X_full * (1 - expit_theta_X_full)
+
+            LprimeX <- gradL(psi, X, lambda, beta, centered, delta_Y, delta_Z)
+            Whole_Grad <- t(t(X) %*% (expit_Diff * LprimeX))
+
+            if (mean(Whole_Grad) < tol) {
+                break
+            }
+            value <- mean(LprimeX * (2 * expit_theta_X_full - 1))
+            msg <- sprintf("SGD: iteration %i, value %f", i, value)
+            message(msg)
+    }
+
+    theta_current <- theta_current - lr * dL_dtheta
     }
     return(theta_current)
 }
@@ -105,25 +134,23 @@ SGD <- function(X, theta_current, lambda, beta, centered, psi, lr, verbose){
 FW <- function(X, lambda, beta, alpha, delta_Y, delta_Z, precision, verbose=TRUE) {
     K <- as.integer(1/precision)
     tol <- 1e-5
-    lr <-0.01
-    theta <- matrix(runif(ncol(X), -5, 5), ncol=ncol(X), nrow=1)
+    d <- ncol(X)
+    theta_fix <- matrix(runif(d, -5, 5), ncol=d, nrow=1)
+    theta <- theta_fix
     #psi_terms <- list(list(weight = 1, func = function(X) { psi_theta(X, theta_init) }))
     
     for (k in 0:K){
-      if (k==1){theta <- matrix(theta[2,], nrow=1, ncol=ncol(X))}
+      if (k==1){theta <- matrix(theta[2,], nrow=1, ncol=d)}
 
       psi <- make_psi(theta)
-      
-      if (verbose) {
-        if (k%%10==0){
-          verbose_SGD <- TRUE
-          msg <- sprintf("FW: iteration %i, value %f", k, L(psi, X,lambda, beta, alpha, centered, delta_Y, delta_Z))
-          message(msg)
-        }else{
-          verbose_SGD <- FALSE
-        } 
-      } 
-        theta_opt <- SGD(X,theta_current=matrix(runif(ncol(X), -5, 5), ncol=ncol(X), nrow=1) , lambda, beta, centered, psi,lr, verbose_SGD)#theta[k+1,]
+        
+        if (verbose && k %% 10 == 0) {
+            msg <- sprintf("FW: iteration %i, value %f", k, L(psi, X, lambda, beta, alpha, centered, delta_Y, delta_Z))
+            message(msg)
+        }
+        theta_opt <- SGD(X, theta_current=theta_fix, 
+                         lambda, beta, centered, psi, (verbose && k %% 10 == 0))
+        
         theta <- rbind(theta, theta_opt)
     }
     return(theta)

@@ -75,7 +75,7 @@ tibble(
   free=policy_free
 ) %>%
   ggplot() +
-  geom_point(aes(x=FW, y=free))
+  geom_point(aes(x=FW, y=free))+geom_abline(intercept=0,slope=1, color="red", linetype="dashed")
 
 
 ### ------------------------------------ ###

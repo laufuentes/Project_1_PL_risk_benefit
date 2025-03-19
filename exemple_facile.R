@@ -19,14 +19,6 @@ alpha <- 0.1
 
 X <- matrix(runif(n*p, -1,1),nrow=n, ncol=p) 
 
-delta_Y <- function(X){
-    return(rep(1, nrow(X)))
-}
-
-delta_Z <- function(X){
-    return(rep(-1, nrow(X)))
-}
-
 psi <- function(X){
     2*expit(X%*%theta)-1
 }
