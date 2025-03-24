@@ -35,11 +35,8 @@ for (fold in Jfold){
 
         for (lambda in L){
             # Step 2: Estimation of objective function in j-th fold
-            psi_debias <- Algo_debias(X, e.nj, mu.nj, nu.nj)
+            L_nj <- Algo_debias(X, e.nj, mu.nj, nu.nj)
 
-            L_nj <- function(psi, X, lambda, beta, Delta_mu_nj,Delta_nu_nj ){
-                R_p(psi, X,Delta_mu_nj) + lambda*S_p(psi, X,beta, Delta_nu_nj)
-            }
 
             # Step 3: Obtain minimizer 
             psi_nj <- algo_optim(L_nj, X, lambda, beta)

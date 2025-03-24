@@ -183,23 +183,18 @@ compute_propensity <- function(s, X, Treatment, technique){
   return(pi.hat_nj)
 }
 
-J_funct <- function(e_n, mu_n, nu_n,psi, y, a, x, xi,lambda, beta,centered){
-  inner<- (1/e_n(a,x))*((y-mu_n(a,x)-(2*a -1)*psi(x))^2 +lambda*(xi -nu_n(a,x) - (2*a-1)*sigma_beta(psi, X, beta, centered))^2)
-  return(mean(inner))
+J_funct_appprox <- function(a,e_xa, psi_x, lambda, sb) {  
+  # Compute the inner term efficiently
+  inner <- ((2*a-1) / e_xa) * (psi_x + lambda * sb)^2
+  
+  return(mean(inner))  # Mean operation remains the same
 }
 
-gradj <- function(e_n, mu_n, nu_n, y, a, x, xi,lambda, beta,centered){
-  out <- (1/e_n(a,x)) * (
-    (2*a -1)^2 * (
-      2*psi(x) - 2*((y-mu_n(a,x))/(2*a-1)) 
-      +lambda * (
-        2*sigma_beta(psi, x,beta,centered)*sigma_beta_prime(psi,x,beta)
-        - 2*((xi-nu_n(a,x))/(2*a-1))*sigma_beta_prime(psi,x,beta)
-      )
-
-    )
-  )
-  return (out)
+gradj <- function(a,e_xa, psi_x, lambda, sb, sb_prime) {  
+  # Compute the gradient efficiently
+  term <- 2*(psi_x + lambda*sb)*(1+lambda*sb_prime)
+  
+  return(( (2*a-1)/ e_xa) * (term))
 }
 
 
@@ -218,7 +213,7 @@ gradj <- function(e_n, mu_n, nu_n, y, a, x, xi,lambda, beta,centered){
 #'
 #' @return A numeric matrix of size 1 x d (optimized parameters).
 #' @export
-SGD_estimation <- function(df, theta_current, lambda, beta, centered, psi, verbose){
+SGD_estimation <- function(df, theta_current, lambda, beta, centered, psi, e_n, mu_n, nu_n, verbose){
   n <- nrow(df)
   max_iter <- 1e3
   tol <- 1e-3
@@ -229,34 +224,23 @@ SGD_estimation <- function(df, theta_current, lambda, beta, centered, psi, verbo
   for(i in 1:max_iter){
     s <- sample.int(n, batch_size)
     data <- df[s,]
-    y <- matrix(data$Y)
     x <- data %>% select(starts_with("X")) %>% as.matrix()
     a <- matrix(data$Treatment)
-    xi<- matrix(ifelse(data$Z==1,1,0))
+  
+
+    e_xa <- e_n(a,x)
+    psi_x <- psi(x)
+    sb <- sigma_beta(psi,x,beta,centered)
+    sb_prime<-sigma_beta_prime(psi,x,beta)
 
     theta_x <- x %*% t(theta_current)
     expit_theta_x <- expit(theta_x)
     expit_diff <- 2 * expit_theta_x * (1 - expit_theta_x)
-
-    Jprime <- gradj(e_n, mu_n, nu_n, y, a, x, xi, lambda,beta, centered)
+    
+    Jprime <- gradj(a,e_xa, psi_x, lambda, sb, sb_prime)
     dJ_dtheta <- t(t(x) %*% (expit_diff * Jprime))
 
     if (verbose && i %% 100 == 0) {
-            # theta_X <- X %*% t(theta_current)
-            # expit_theta_X_full <- expit(theta_X)
-            # expit_Diff <- 2 * expit_theta_X_full * (1 - expit_theta_X_full)
-
-            # JprimeX <- gradj(e_n, 
-            # mu_n, 
-            # nu_n, 
-            # matrix(df$Y), 
-            # matrix(df$Treatment),
-            # df %>% select(starts_with("X")) %>% as.matrix(),  
-            # matrix(ifelse(df$Z==1,1,0)),
-            # beta, centered)
-
-            # Whole_Grad <- t(t(X) %*% (expit_Diff * JprimeX))
-
             if (mean(dJ_dtheta) < tol) {
                 break
             }
@@ -289,7 +273,7 @@ SGD_estimation <- function(df, theta_current, lambda, beta, centered, psi, verbo
 #' @return A numeric matrix containing the optimized parameter \code{theta},  
 #'         where each row represents the k-th \code{theta} solution at iteration \code{k}.
 #' @export
-FW_estimation <- function(df, lambda,  beta, centered, e_n, mu_n, nu_n,precision, verbose=TRUE) {
+FW_estimation <- function(df, lambda,  beta, centered, e_n,precision, verbose=TRUE) {
     K <- as.integer(1/precision)
     tol <- 1e-5
 
@@ -308,10 +292,13 @@ FW_estimation <- function(df, lambda,  beta, centered, e_n, mu_n, nu_n,precision
       psi <- make_psi(theta)
         
         if (verbose && k %% 10 == 0) {
-            msg <- sprintf("FW: iteration %i, value %f", k, J_funct(e_n, mu_n, nu_n,psi, Y, A, X, Xi,lambda, beta,centered))
+          e_xa <- e_n(A,X)
+          psi_x <- psi(X)
+          sb <- sigma_beta(psi,X, beta, centered)
+            msg <- sprintf("FW: iteration %i, value %f", k, J_funct_appprox(A, e_xa, psi_x, lambda, sb))
             message(msg)
         }
-        theta_opt <- SGD_estimation(df, theta_fix, lambda, beta, centered, psi, (verbose && k %% 10 == 0))
+        theta_opt <- SGD_estimation(df, theta_fix, lambda, beta, centered, psi, e_n, mu_n, nu_n, (verbose && k %% 10 == 0))
         
         theta <- rbind(theta, theta_opt)
     }
@@ -320,29 +307,33 @@ FW_estimation <- function(df, lambda,  beta, centered, e_n, mu_n, nu_n,precision
 
 
 
-debias_procedure <- function(X, outcome, h_functs, e_nj, mu_nj,nu_nj){
+debias_procedure <- function(df, e_nj, mu_nj,nu_nj){
 
-  varphi_k <- function(x) x
+  X <- df %>% select(starts_with("X")) %>% as.matrix()
 
-  # 1- Construct varphi_hat
-  varphi_hat <- function(a,x){
-    c(h_functs[[1]](a,x)*varphi_k(x), h_functs[[2]](a,x)*varphi_k(x))
+  res <- FW_estimation(df, lambda,  beta, centered, e_nj,precision)
+  psi <- make_psi(res)
+
+  Delta_mu_nj <- function(X){mu_nj(1,X)-mu_nj(0,X)}
+  Delta_nu_nj <- function(X){nu_nj(1,X)-nu_nj(0,X)}
+
+  L_debias <- function(psi, lambda, beta, X, centered=TRUE){
+    term_1 <- psi(X)^2 - 2 * psi(X)* (Delta_mu_nj(X))
+    term_2 <- sigma_beta(psi,X, beta, centered) *(Delta_nu_nj(X))- alpha
+    correction <- 2*(psi(X) + lambda*sigma_beta(psi,X, beta, centered))
+    out <- term_1 +lambda*term_2 +correction
+    return(mean(out))
   }
-
-  # 2 - 
-  # 2.1 - Choose link function and obtain regresion coefficients
-    g1 <-  function(x)x
-    g_bar1 <- function(x)1/x
-
-    g2 <- function(x){as.matrix(logit(x))}
-    g_bar2 <- function(x){as.matrix(expit(x))}
-
-    # 2.2 - Estimate psi_debias 
-    
-  
-  # Return debiased out-of fold outcome regression estimator
-  mu_nj.star <- function(a, x){g_bar1(g1(f_nj(a,x)) + t(varphi_hat(a,x))%*%psi(x))}
-  nu_nj.star <- function(a, x){g_bar2(g2(f_nj(a,x)) + t(varphi_hat(a,x))%*%psi(x))}
+  return(L_debias)
 }
 
+A <- df$Treatment
+Y <- df$Y
+Z <- df$Z
 
+DELTA<-mean(
+  (2*A-1)/(e.nj(A,X)) * (
+  -2*psi(X)*(Y-mu.nj(A,X)) +
+  lambda*sigma_beta(psi,X, beta, centered)*
+  (Z - mu.nj(A,X))) -(2*A-1)*(psi(X) +lambda*sigma_beta(psi,X,beta, centered)) 
+  )
