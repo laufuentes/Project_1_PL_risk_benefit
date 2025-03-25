@@ -56,7 +56,7 @@ nuissance_params <- function(s, df, technique){
   X <- df%>%select(starts_with("X"))
   Treatment <- df$Treatment
   Y <- df$Y
-  Z <- df$Z
+  Z <- df$Xi
 
   pi.hat.nj <- compute_propensity(s, X, Treatment, technique)
 
@@ -183,19 +183,34 @@ compute_propensity <- function(s, X, Treatment, technique){
   return(pi.hat_nj)
 }
 
-J_funct_appprox <- function(a,e_xa, psi_x, lambda, sb) {  
-  # Compute the inner term efficiently
-  inner <- ((2*a-1) / e_xa) * (psi_x + lambda * sb)^2
+# J_funct_appprox <- function(a,e_xa, psi_x, lambda, sb) {  
+#   # Compute the inner term efficiently
+#   inner <- ((2*a-1) / e_xa) * (psi_x + lambda * sb)^2
   
-  return(mean(inner))  # Mean operation remains the same
+#   return(mean(inner))  # Mean operation remains the same
+# }
+
+# gradj <- function(a,e_xa, psi_x, lambda, sb, sb_prime) {  
+#   # Compute the gradient efficiently
+#   term <- 2*(psi_x + lambda*sb)*(1+lambda*sb_prime)
+  
+#   return(( (2*a-1)/ e_xa) * (term))
+# }
+
+J_funct_appprox <- function(e_xa, psi_x, rho, lambda, sb) {  
+  # Compute the inner term efficiently
+  inner <- (psi_x + lambda * sb)^2 -2*rho*(psi_x+lambda*sb)
+  
+  return(mean((1/e_xa)*inner))  # Mean operation remains the same
 }
 
-gradj <- function(a,e_xa, psi_x, lambda, sb, sb_prime) {  
-  # Compute the gradient efficiently
-  term <- 2*(psi_x + lambda*sb)*(1+lambda*sb_prime)
-  
-  return(( (2*a-1)/ e_xa) * (term))
+gradj <- function(psi_x, e_xa, rho, sb, sb_prime){
+  out <- (1+lambda*sb_prime) *(
+    -2*(rho) + 2*(psi_x +lambda*sb)
+    )
+    return( (1/e_xa) *out)
 }
+
 
 
 #' Stochastic Gradient Descent (SGD)
@@ -226,7 +241,8 @@ SGD_estimation <- function(df, theta_current, lambda, beta, centered, psi, e_n, 
     data <- df[s,]
     x <- data %>% select(starts_with("X")) %>% as.matrix()
     a <- matrix(data$Treatment)
-  
+
+    rho<- df[s,]$Y-mu_n(a,x) + lambda*(df[s,]$Xi-nu_n(a,x))
 
     e_xa <- e_n(a,x)
     psi_x <- psi(x)
@@ -237,7 +253,7 @@ SGD_estimation <- function(df, theta_current, lambda, beta, centered, psi, e_n, 
     expit_theta_x <- expit(theta_x)
     expit_diff <- 2 * expit_theta_x * (1 - expit_theta_x)
     
-    Jprime <- gradj(a,e_xa, psi_x, lambda, sb, sb_prime)
+    Jprime <- gradj(psi_x, e_xa, rho, sb, sb_prime)
     dJ_dtheta <- t(t(x) %*% (expit_diff * Jprime))
 
     if (verbose && i %% 100 == 0) {
@@ -295,7 +311,8 @@ FW_estimation <- function(df, lambda,  beta, centered, e_n,precision, verbose=TR
           e_xa <- e_n(A,X)
           psi_x <- psi(X)
           sb <- sigma_beta(psi,X, beta, centered)
-            msg <- sprintf("FW: iteration %i, value %f", k, J_funct_appprox(A, e_xa, psi_x, lambda, sb))
+          rho <- Y-mu_n(A,X) + lambda*(Xi-nu_n(A,X))
+            msg <- sprintf("FW: iteration %i, value %f", k, J_funct_appprox(e_xa, psi_x, rho, lambda, sb))
             message(msg)
         }
         theta_opt <- SGD_estimation(df, theta_fix, lambda, beta, centered, psi, e_n, mu_n, nu_n, (verbose && k %% 10 == 0))
@@ -307,20 +324,20 @@ FW_estimation <- function(df, lambda,  beta, centered, e_n,precision, verbose=TR
 
 
 
-debias_procedure <- function(df, e_nj, mu_nj,nu_nj){
+debias_procedure <- function(df, e.nj, mu.nj,nu.nj){
 
   X <- df %>% select(starts_with("X")) %>% as.matrix()
 
   res <- FW_estimation(df, lambda,  beta, centered, e_nj,precision)
   psi <- make_psi(res)
 
-  Delta_mu_nj <- function(X){mu_nj(1,X)-mu_nj(0,X)}
-  Delta_nu_nj <- function(X){nu_nj(1,X)-nu_nj(0,X)}
+  Delta_mu_nj <- function(X){mu.nj(1,X)-mu.nj(0,X)}
+  Delta_nu_nj <- function(X){nu.nj(1,X)-nu.nj(0,X)}
 
   L_debias <- function(psi, lambda, beta, X, centered=TRUE){
     term_1 <- psi(X)^2 - 2 * psi(X)* (Delta_mu_nj(X))
     term_2 <- sigma_beta(psi,X, beta, centered) *(Delta_nu_nj(X))- alpha
-    correction <- 2*(psi(X) + lambda*sigma_beta(psi,X, beta, centered))
+    correction <- psi(X)+lambda*sigma_beta(psi,X,beta, centered)
     out <- term_1 +lambda*term_2 +correction
     return(mean(out))
   }

@@ -153,3 +153,33 @@ delta_Z <- function(X){
   out <- p1 - p0
   return(out)
 }
+
+delta_Xi <- function(X){
+  n <- nrow(X)
+  theta_Z <- c(-0.009,0,-0.09,0,0,0,0)
+  beta.0<- 1
+  if(option[1]=="IVF"){
+    if(option[2]=="1"){
+      logit_prob_Z.0 <- beta.0 + as.matrix(X)%*%theta_Z 
+      logit_prob_Z.1 <- logit_prob_Z.0 + 2
+      
+      p0 <- 1/(1+exp(-logit_prob_Z.0))
+      p1 <- 1/(1+exp(-logit_prob_Z.1))
+    }else{
+      p0 <- ifelse(
+        X[,3] < 20 & X[,1] < 150,
+        0.5, # Generate random values for true condition
+        0.055) # Generate random values for false condition
+      
+      p1 <- ifelse(
+        X[,3] < 25 & X[,1] < 155,
+        p0+ 0.35,
+        p0+ 0.25)
+    }
+  }else{
+    p1<- ifelse(2+ X[,1] + h_R(X,rep(1,n),option[2])>2,1,0)
+    p0 <- ifelse(2+ X[,1] + h_R(X,rep(-1,n),option[2])>2,1,0)
+  }
+  out <- p1 - p0
+  return(out)
+}

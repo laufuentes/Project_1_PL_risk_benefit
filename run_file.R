@@ -41,6 +41,8 @@ technique <- "cv.glmnet" # technique for estimation
 exp <- data_gen(n, option)
 df <- exp[[2]]
 
+df$Xi <- ifelse(df$Z>2,1,0)
+
 X <- df %>% select(starts_with("X")) %>% as.matrix()
 
 lambda <- 1
