@@ -2,7 +2,7 @@ library(grf)
 library(rsample)
 library(glmnet)
 library(roxygen2)
-
+library(data.table)
 
 #' Partition Data into Folds
 #'
@@ -197,17 +197,13 @@ compute_propensity <- function(s, X, Treatment, technique){
 #   return(( (2*a-1)/ e_xa) * (term))
 # }
 
-J_funct_appprox <- function(e_xa, psi_x, rho, lambda, sb) {  
-  # Compute the inner term efficiently
-  inner <- (psi_x + lambda * sb)^2 -2*rho*(psi_x+lambda*sb)
-  
+J_funct_appprox <- function(e_xa, psi_x, lambda, rho11, rho22, sb){  
+  inner <- -2*(rho11*psi_x) +psi_x^2 + lambda*(-2*rho22*sb +sb^2)
   return(mean((1/e_xa)*inner))  # Mean operation remains the same
 }
 
-gradj <- function(psi_x, e_xa, rho, sb, sb_prime){
-  out <- (1+lambda*sb_prime) *(
-    -2*(rho) + 2*(psi_x +lambda*sb)
-    )
+gradj <- function(e_xa,rho1, rho2){
+  out <- rho1+rho2
     return( (1/e_xa) *out)
 }
 
@@ -217,43 +213,66 @@ gradj <- function(psi_x, e_xa, rho, sb, sb_prime){
 #'
 #' Performs stochastic gradient descent to optimize the parameters.
 #'
-#' @param X A numeric matrix of size n x d (input data).
+#' @param df A data.frame n x d (input data).
 #' @param theta_current A numeric matrix of size 1 x d (intialization for parameter to estimate).
 #' @param lambda A numeric scalar controlling the weight of the constraint function in the objective.
 #' @param beta A numeric scalar controlling the sharpness of the probability function.
 #' @param centered A logical value indicating whether to center the policy.
-#' @param psi A function that takes X as input.
-#' @param lr A numeric scalar (learning rate).
+#' @param psi A treatment rule function that takes X as input.
+#' @param e_n The propensity score function, taking A and X as input.
+#' @param mu_n The conditional expectation of Y function, taking A and X as input.
+#' @param nu_n The conditional expectation of Xi function, taking A and X as input.
 #' @param verbose A logical value indicating whether to print progress.
 #'
 #' @return A numeric matrix of size 1 x d (optimized parameters).
 #' @export
 SGD_estimation <- function(df, theta_current, lambda, beta, centered, psi, e_n, mu_n, nu_n, verbose){
   n <- nrow(df)
-  max_iter <- 1e3
+  x_cols <- grep("^X", names(df))
+  setDT(df)
+  max_iter <- 5*1e3
   tol <- 1e-3
   lr <- 0.01
+
+  A <- df$Treatment
+  X <- as.matrix(df[, ..x_cols])
+  e_XA <- e_n(A, X)
+  mu_XA <- mu_n(A, X)
+  nu_XA <- nu_n(A, X)
+  psi_X <- psi(X)
+  sbX <- sigma_beta(psi,X, beta, centered)
+  sb_primeX <- sigma_beta_prime(psi,X, beta)
 
   batch_size <- as.integer(n / 3)
 
   for(i in 1:max_iter){
-    s <- sample.int(n, batch_size)
-    data <- df[s,]
-    x <- data %>% select(starts_with("X")) %>% as.matrix()
-    a <- matrix(data$Treatment)
+    s <- sample.int(n, batch_size, replace = FALSE)
+    data <- df[s]
+    x <- as.matrix(data[, ..x_cols])
+    a <- data[["Treatment"]]
+    y <- data[["Y"]]
+    xi <- data[["Xi"]]
 
-    rho<- df[s,]$Y-mu_n(a,x) + lambda*(df[s,]$Xi-nu_n(a,x))
+    # Precompute values that don't depend on theta
+    psi_x <- psi_X[s]
+    mu_xa <- mu_XA[s]
+    nu_xa <- nu_XA[s]
+    e_xa<- e_XA[s]
+    sb <- sbX[s]
+    sb_prime <- sb_primeX[s]
+    a_scaled <- 2 * a - 1
 
-    e_xa <- e_n(a,x)
-    psi_x <- psi(x)
-    sb <- sigma_beta(psi,x,beta,centered)
-    sb_prime<-sigma_beta_prime(psi,x,beta)
+    # Calculate e_xa, mu_xa, and nu_xa
+
+    rho1 <- psi_x - (y - mu_xa) * a_scaled
+    rho2 <- lambda * sb_prime * (sb - (xi - nu_xa) * a_scaled)
+    Jprime <- (rho1 + rho2) / e_xa
 
     theta_x <- x %*% t(theta_current)
     expit_theta_x <- expit(theta_x)
     expit_diff <- 2 * expit_theta_x * (1 - expit_theta_x)
-    
-    Jprime <- gradj(psi_x, e_xa, rho, sb, sb_prime)
+
+    dJ_dtheta <- t(x) %*% (expit_diff * Jprime) / batch_size
     dJ_dtheta <- t(t(x) %*% (expit_diff * Jprime))
 
     if (verbose && i %% 100 == 0) {
@@ -261,7 +280,7 @@ SGD_estimation <- function(df, theta_current, lambda, beta, centered, psi, e_n, 
                 break
             }
             value <- mean(Jprime * (2 * expit_theta_x - 1))
-            msg <- sprintf("SGD: iteration %i, value %f", i, value)
+            msg <- sprintf("SGD-Est: iteration %i, value %f", i, value)
             message(msg)
     }
 
@@ -270,26 +289,27 @@ SGD_estimation <- function(df, theta_current, lambda, beta, centered, psi, e_n, 
     return(theta_current)
 }
 
-#' Frank-Wolfe Algorithm
+#' Frank-Wolfe Algorithm for Estimation
 #'
 #' Implements the Frank-Wolfe optimization algorithm to iteratively refine a convex  
 #' combination function \code{psi}. At each iteration, a new solution \code{theta}  
 #' is computed via stochastic gradient descent (SGD) and added to the convex combination  
 #' in the form \eqn{2 \cdot \text{expit}(X \theta) - 1}.
 #'
-#' @param X A numeric matrix (input data).
+#' @param df A data frame n x d (input data).
 #' @param lambda A numeric scalar controlling the weight of the constraint function in the objective.
 #' @param beta A numeric scalar controlling the sharpness of the probability function.
-#' @param alpha A numeric scalar (constraint tolerance).
-#' @param delta_Y A function of \code{X} that determines the difference between primary counterfactual outcomes.
-#' @param delta_Z A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param centered A logical value indicating whether to center the policy.
+#' @param e_n The propensity score function, taking A and X as input.
+#' @param mu_n The conditional expectation of Y function, taking A and X as input.
+#' @param nu_n The conditional expectation of Xi function, taking A and X as input.
 #' @param precision A numeric scalar that determines the convergence precision desired.
 #' @param verbose A logical value indicating whether to print progress updates. Default is \code{TRUE}.
 #'
 #' @return A numeric matrix containing the optimized parameter \code{theta},  
 #'         where each row represents the k-th \code{theta} solution at iteration \code{k}.
 #' @export
-FW_estimation <- function(df, lambda,  beta, centered, e_n,precision, verbose=TRUE) {
+FW_estimation <- function(df, lambda,  beta, centered, e_n, mu_n, nu_n,precision, verbose=TRUE) {
     K <- as.integer(1/precision)
     tol <- 1e-5
 
@@ -306,13 +326,16 @@ FW_estimation <- function(df, lambda,  beta, centered, e_n,precision, verbose=TR
       if (k==1){theta <- matrix(theta[2,], nrow=1, ncol=d)}
 
       psi <- make_psi(theta)
-        
+       
         if (verbose && k %% 10 == 0) {
           e_xa <- e_n(A,X)
+          mu_xa<-mu_n(A,X)
+          nu_xa<- nu_n(A,X)
           psi_x <- psi(X)
           sb <- sigma_beta(psi,X, beta, centered)
-          rho <- Y-mu_n(A,X) + lambda*(Xi-nu_n(A,X))
-            msg <- sprintf("FW: iteration %i, value %f", k, J_funct_appprox(e_xa, psi_x, rho, lambda, sb))
+          rho11<- (Y-mu_xa)*(2*A-1)
+          rho22 <- (Xi -nu_xa)*(2*A-1)
+            msg <- sprintf("FW-Est: iteration %i, value %f", k, J_funct_appprox(e_xa, psi_x, lambda, rho11, rho22, sb))
             message(msg)
         }
         theta_opt <- SGD_estimation(df, theta_fix, lambda, beta, centered, psi, e_n, mu_n, nu_n, (verbose && k %% 10 == 0))
@@ -323,34 +346,41 @@ FW_estimation <- function(df, lambda,  beta, centered, e_n,precision, verbose=TR
 }
 
 
-
-debias_procedure <- function(df, e.nj, mu.nj,nu.nj){
-
+#' Debiasing procedure TMLE-like
+#'
+#' Debias the initial nuisance parameters estimation  
+#' by calibrating \code{psi} such that the first term of the EIC of the objective function L 
+#' becomes 0. Such calibration is performed via a 
+#'
+#' @param df A data frame n x d (input data).
+#' @param lambda A numeric scalar controlling the weight of the constraint function in the objective.
+#' @param beta A numeric scalar controlling the sharpness of the probability function.
+#' @param centered A logical value indicating whether to center the policy.
+#' @param e_n The propensity score function, taking A and X as input.
+#' @param mu_n The conditional expectation of Y function, taking A and X as input.
+#' @param nu_n The conditional expectation of Xi function, taking A and X as input.
+#' @param precision A numeric scalar that determines the convergence precision desired.
+#' @param verbose A logical value indicating whether to print progress updates. Default is \code{TRUE}.
+#'
+#' @return A numeric matrix containing the optimized parameter \code{theta},  
+#'         where each row represents the k-th \code{theta} solution at iteration \code{k}.
+#' @export
+debias_procedure <- function(df, e.nj, mu.nj,nu.nj, lambda, beta,precision){
   X <- df %>% select(starts_with("X")) %>% as.matrix()
 
-  res <- FW_estimation(df, lambda,  beta, centered, e_nj,precision)
+  res <- FW_estimation(df, lambda,  beta, centered, e.nj, mu.nj, nu.nj,precision)
   psi <- make_psi(res)
 
-  Delta_mu_nj <- function(X){mu.nj(1,X)-mu.nj(0,X)}
-  Delta_nu_nj <- function(X){nu.nj(1,X)-nu.nj(0,X)}
-
-  L_debias <- function(psi, lambda, beta, X, centered=TRUE){
-    term_1 <- psi(X)^2 - 2 * psi(X)* (Delta_mu_nj(X))
-    term_2 <- sigma_beta(psi,X, beta, centered) *(Delta_nu_nj(X))- alpha
-    correction <- psi(X)+lambda*sigma_beta(psi,X,beta, centered)
-    out <- term_1 +lambda*term_2 +correction
-    return(mean(out))
+  Delta_mu_nj <- function(X){
+    mu1_star <-mu.nj(1,X) + psi(X)
+    mu0_star <- mu.nj(0,X) - psi(X)
+    return(mu1_star-mu0_star)
   }
-  return(L_debias)
+
+  Delta_nu_nj <- function(X){
+    nu1_star <- nu.nj(1,X) + sigma_beta(psi,X, beta, centered)
+    nu0_star <- nu.nj(0,X) - sigma_beta(psi,X, beta, centered)
+    return(nu1_star-nu0_star)
+  }
+  return(list(Delta_mu_nj, Delta_nu_nj))
 }
-
-A <- df$Treatment
-Y <- df$Y
-Z <- df$Z
-
-DELTA<-mean(
-  (2*A-1)/(e.nj(A,X)) * (
-  -2*psi(X)*(Y-mu.nj(A,X)) +
-  lambda*sigma_beta(psi,X, beta, centered)*
-  (Z - mu.nj(A,X))) -(2*A-1)*(psi(X) +lambda*sigma_beta(psi,X,beta, centered)) 
-  )

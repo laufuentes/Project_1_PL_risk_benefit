@@ -91,7 +91,7 @@ data_gen <- function(n, option){
     p0 <- 2+ X[,1] + h_R(X,rep(-1,n),option[2])+epsilon_R
   }
   df_complete <- data.frame(X=X,Treatment,y1=Y.1,y0=Y.0,p1=p1,p0=p0)
-  df_obs<- data.frame(X,Treatment,Y=ifelse(Treatment==1,Y.1,Y.0),Z=ifelse(Treatment==1, p1, p0))
+  df_obs<- data.frame(X=X,Treatment,Y=ifelse(Treatment==1,Y.1,Y.0),Z=ifelse(Treatment==1, p1, p0))
   return(list(df_complete, df_obs))
 }
 

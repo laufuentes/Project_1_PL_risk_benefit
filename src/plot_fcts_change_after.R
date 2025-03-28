@@ -135,8 +135,18 @@ policy_value_plot<-  function(results,type_simu, lambda_opt, beta_opt, option){
   ggsave(paste0("images/",type_simu,"/beta_evol_",option[1],"_",option[2],".pdf"),beta_evol)
 }
 
-gamma_plot_funct <- function(psi, X, lambda, beta, df, option, centered) {
-  policy<- sigma_beta(psi, X, beta, centered)
+sigma_beta_fixed <- function(psi_x, beta, centered){
+  c_beta <- 1 / log((1 + exp(beta)) / (1 + exp(-beta)))
+    if (centered) {
+        cent <- 0.5 - c_beta * log(2 / (1 + exp(-beta)))
+    } else {
+        cent <- 0
+    }
+    out <- c_beta * log((1 + exp(beta * psi_x)) / (1 + exp(-beta))) + cent
+}
+
+gamma_plot_funct <- function(psi_X, lambda, beta, df, option, centered) {
+  policy<- sigma_beta_fixed(psi_X, beta, centered)
   # Initialize base plot
   if(option[1]=="IVF"){
     p <- ggplot(
@@ -160,9 +170,9 @@ gamma_plot_funct <- function(psi, X, lambda, beta, df, option, centered) {
                   color = "black", fill = NA, linewidth = 1, inherit.aes = FALSE)
     }
   }else{
-    p2 <- ggplot(
+    p <- ggplot(
       cbind(df, treat_proba = policy),
-      aes(x = X1, y = X2, color = treat_proba)
+      aes(x = X.1, y = X.2, color = treat_proba)
     ) +
       geom_point(alpha = 0.5) +
       scale_color_gradient2(low = "blue", mid = "white", high = "red", 
@@ -176,7 +186,7 @@ gamma_plot_funct <- function(psi, X, lambda, beta, df, option, centered) {
   return(p)
 }
 
-geom_points_fct <- function(results, idx_opt, df, type_simu, option, centered){
+geom_points_fct <- function(results, idx_opt, df, type_simu, option, centered=TRUE){
 
   lambda_discr <- which(results$beta==results$beta[idx_opt])[as.integer(seq(1, length(which(results$beta==results$beta[idx_opt])), length.out=10))]
   
@@ -200,7 +210,7 @@ geom_points_fct <- function(results, idx_opt, df, type_simu, option, centered){
   
 }
 
-gamma_lambda_plot <- function(results, df, type_simu, option, centered){
+gamma_lambda_plot <- function(results, df, type_simu, option, centered=TRUE){
   # Select the row with the maximum policy_value for each lambda
   lambda_results <- results %>% 
     select(-optimal_x) %>% 
