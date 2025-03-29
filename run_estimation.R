@@ -35,7 +35,7 @@ option <- option_det(setting, "_")
 #B <- c(0.05,0.1)
 #Lambda <- c(0,5,10)
 B <- seq(0.05, 2, 0.05) # beta candidates 
-Lambda <- seq(0,15, 1) # lambda candidates
+Lambda <- seq(0,10, 1) # lambda candidates
 
 # Estimation parameters
 Jfold<- 5 # number of K-folds
@@ -78,9 +78,9 @@ Thetas <- lapply(combination_results, `[[`, 2)
 Causal_contrast <- lapply(combination_results, `[[`, 1)
 
 # Save Thetas
-saveRDS(Thetas, file = "opt_results/Thetas.rds")
+saveRDS(Thetas, file = "opt_results/estimation/Thetas.rds")
 # Save Causal_contrast
-saveRDS(Causal_contrast, file = "opt_results/Causal_contrast.rds")
+saveRDS(Causal_contrast, file = "opt_results/estimation/Causal_contrast.rds")
 
 res<-mclapply(1:nrow(param_combinations), function(i) {
     process_policy(i,param_combinations,Thetas,X,mu.hat.nj,
@@ -88,6 +88,7 @@ res<-mclapply(1:nrow(param_combinations), function(i) {
     centered,alpha)
 }, mc.cores = detectCores(), mc.preschedule = FALSE) 
 
+saveRDS(res, file = "opt_results/estimation/res.rds")
 results <- as.data.frame(do.call(rbind, res))
 
 # Save the results to a CSV file

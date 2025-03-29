@@ -35,7 +35,7 @@ option <- option_det(setting, "_")
 
 # GRID SEARCH PARAMETERS
 B <- seq(0.05, 2, 0.05) # beta candidates 
-Lambda <- seq(0,10, 0.25) # lambda candidates
+Lambda <- seq(0,10, 1)  # lambda candidates
 
 param_combinations <- expand.grid(lambda = Lambda, beta = B)
 
@@ -121,6 +121,7 @@ save_policies_to_csv <- function(policies, file_name = "opt_results/oracular/pol
 }
 
 save_policies_to_csv(policies)
+saveRDS(policies, file = "opt_results/oracular/Thetas.rds")
 
 
 res<-mclapply(1:nrow(param_combinations), function(i) {
@@ -128,6 +129,7 @@ res<-mclapply(1:nrow(param_combinations), function(i) {
     df,centered,alpha)
 }, mc.cores = detectCores(), mc.preschedule = FALSE) 
 
+saveRDS(res, file = "opt_results/oracular/res.rds")
 results <- as.data.frame(do.call(rbind, res))
 
 # Save the results to a CSV file
