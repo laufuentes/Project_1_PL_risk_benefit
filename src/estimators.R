@@ -339,7 +339,7 @@ FW_estimation <- function(df, lambda,  beta, centered, e_n, mu_n, nu_n,precision
             message(msg)
         }
         theta_opt <- SGD_estimation(df, theta_fix, lambda, beta, centered, psi, e_n, mu_n, nu_n, (verbose && k %% 10 == 0))
-        
+
         theta <- rbind(theta, theta_opt)
     }
     return(theta)

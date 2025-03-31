@@ -56,6 +56,7 @@ algo_combination <- function(comb){
 
     # Step 3: Obtain minimizer 
     theta_nj <- FW(X, lambda, beta, alpha, Delta_mu_nj_star, Delta_nu_nj_star, precision)
+    saveRDS(theta, file = "opt_results/estimation/theta.rds")
   return(list(debiased_causal_contrast,theta_nj))
 }
 

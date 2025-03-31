@@ -65,15 +65,15 @@ combination_results <- mclapply(1:nrow(param_combinations), function(i) {
 }, mc.cores = detectCores(),mc.preschedule = FALSE)
 
 
-RowCountsDF <- data.frame(
-  CombinationID = 1:length(combination_results),  # Unique ID for each combination
-  NumRows = sapply(combination_results, function(res) nrow(res[[2]])) # Extract row count
-)
+# RowCountsDF <- data.frame(
+#   CombinationID = 1:length(combination_results),  # Unique ID for each combination
+#   NumRows = sapply(combination_results, function(res) nrow(res[[2]])) # Extract row count
+# )
 
-Theta_df <- as.data.frame(do.call(rbind, lapply(combination_results, `[[`, 2)))
+#Theta_df <- as.data.frame(do.call(rbind, lapply(combination_results, `[[`, 2)))
 
-save_policies_to_csv(Theta_df)
-
+#save_policies_to_csv(Theta_df)
+saveRDS(Combination_results, file = "opt_results/estimation/Combination_results.rds")
 Thetas <- lapply(combination_results, `[[`, 2)
 Causal_contrast <- lapply(combination_results, `[[`, 1)
 
@@ -123,5 +123,6 @@ ggsave("images/estimation/optimal_policy.pdf",p)
 
 
 # To load them back later:
-# loaded_Thetas <- readRDS("Thetas.rds")
-# loaded_Causal_contrast <- readRDS("Causal_contrast.rds")
+# loaded_Thetas <- readRDS("opt_results/estimation/Thetas.rds")
+# loaded_Causal_contrast <- readRDS("opt_results/estimation/Causal_contrast.rds")
+#loaded_res <- readRDS("opt_results/estimation/res.rds")

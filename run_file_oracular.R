@@ -49,6 +49,8 @@ df$Xi_0 <- ifelse(df$p0>2,1,0)
 df$Xi_1 <- ifelse(df$p1>2,1,0)
 covariates <- df %>% select(starts_with("X")) %>% as.matrix()
 
+saveRDS(df, file = "opt_results/oracular/df.rds")
+
 ##########################
 # Optimization functions #
 ##########################
@@ -190,3 +192,9 @@ tibble(
   ggplot() +
   geom_point(aes(x=FW, y=free))+geom_abline(intercept=0,slope=1, color="red", linetype="dashed")
 
+
+###############################
+######### Other tests #########
+###############################
+
+res <- readRDS("opt_results/oracular/res.rds")

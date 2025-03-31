@@ -77,37 +77,64 @@ synthetic_setting_plot <- function(df_complete){
 lambda_evol<- function(results, type_simu, option, lambda_opt, beta_opt){
   results_beta <- results[which(results$lambda==lambda_opt),]
   results_lambda <- results[which(results$beta==beta_opt),]
+
   # lambda plot
-  lambda_evol<- ggplot(results_lambda %>% as.data.frame(), aes(x = lambda)) +
+  # lambda plot
+  lambda_evol <- ggplot(results_lambda %>% as.data.frame(), aes(x = lambda)) +
     geom_point(aes(y = risk, color = "Risk")) +
     geom_point(aes(y = constraint, color = "Constraint")) +
-    geom_point(aes(y=policy_value,color="Policy value"))+
-    geom_point(aes(y=obj, color="L"))+
-    geom_line(aes(y = risk, color = "Risk")) +
-    geom_line(aes(y = constraint, color = "Constraint")) +
-    geom_line(aes(y=policy_value,color="Policy value"))+
-    geom_line(aes(y=obj, color="L"))+
-    labs(title = "Risk and Constraint vs Lambda", x = "Lambda", y = "Value") +
-    scale_color_manual(name = "Functions", values = c("Risk" = "blue", "Constraint" = "red", "L"="gray", "Policy value"="black")) +
-    theme_minimal()
-  
+    geom_point(aes(y = policy_value, color = "Policy value")) +
+    geom_point(aes(y = obj, color = "L")) +
+    geom_smooth(aes(y = risk, color = "Risk"), method = "loess", se = FALSE, span = 0.5) +
+    geom_smooth(aes(y = constraint, color = "Constraint"), method = "loess", se = FALSE, span = 0.5) +
+    geom_smooth(aes(y = policy_value, color = "Policy value"), method = "loess", se = FALSE, span = 0.5) +
+    geom_smooth(aes(y = obj, color = "L"), method = "loess", se = FALSE, span = 0.5) +
+    labs(
+      title= expression("Evolution of optimal solution " * psi[lambda]*" with respect to " * lambda), # Added expression here
+      subtitle = if (type_simu == "oracular") {
+        expression(psi[lambda] == argmin~bgroup("{", list(L[P[0]](psi, lambda) * ": " * psi %in% Psi), "}"))
+      } else {
+        expression(psi[lambda] == argmin~bgroup("{", list(L[P[n]](psi, lambda) * ": " * psi %in% Psi), "}"))
+      },
+      x = expression(lambda), # added expression here.
+      y = "Values"
+    ) +
+    scale_color_manual(
+    name = "Functions",
+    values = c("Risk" = "blue", "Constraint" = "red", "L" = "gray", "Policy value" = "black"),
+    labels = if (type_simu == "oracular") {
+      c(
+        "Risk" = expression(R[P[0]](psi[lambda])),
+        "Constraint" = expression(S[P[0]](psi[lambda])),
+        "L" = expression(L[P[0]](psi[lambda],lambda)),
+        "Policy value" = expression(V[P[0]](pi^{"*"}))
+      ) # Closing parenthesis for c()
+    } else {
+      c(
+        "Risk" = expression(R[P[n]]),
+        "Constraint" = expression(S[P[n]]),
+        "L" = expression(L[P[n]](psi[lambda])),
+        "Policy value" = expression(V[P[n]](pi^{"*"}))
+      ) # Closing parenthesis for c()
+    }
+  )+theme_minimal()
   ggsave(paste0("images/",type_simu,"/lambda_evol_",option[1],"_",option[2],".pdf"),lambda_evol)
 
   # beta plot
-  beta_evol<- ggplot(results_beta, aes(x = beta)) +
-    geom_point(aes(y = risk, color = "Risk")) +
-    geom_point(aes(y = constraint, color = "Constraint")) +
-    geom_point(aes(y=obj, color="L"))+
-    geom_point(aes(y=policy_value,color="Policy value"))+
-    geom_line(aes(y = risk, color = "Risk")) +
-    geom_line(aes(y = constraint, color = "Constraint")) +
-    geom_line(aes(y=policy_value,color="Policy value"))+
-    geom_line(aes(y=obj, color="L"))+
-    labs(title = "Risk and Constraint vs Beta", x = "Beta", y = "Value") +
-    scale_color_manual(name = "Functions", values = c("Risk" = "blue", "Constraint" = "red", "L"="gray", "Policy value"="black")) +
-    theme_minimal()
+  # beta_evol<- ggplot(results_beta, aes(x = beta)) +
+  #   geom_point(aes(y = risk, color = "Risk")) +
+  #   geom_point(aes(y = constraint, color = "Constraint")) +
+  #   geom_point(aes(y=obj, color="L"))+
+  #   geom_point(aes(y=policy_value,color="Policy value"))+
+  #   geom_line(aes(y = risk, color = "Risk")) +
+  #   geom_line(aes(y = constraint, color = "Constraint")) +
+  #   geom_line(aes(y=policy_value,color="Policy value"))+
+  #   geom_line(aes(y=obj, color="L"))+
+  #   labs(title = "Risk and Constraint vs Beta", x = "Beta", y = "Value") +
+  #   scale_color_manual(name = "Functions", values = c("Risk" = "blue", "Constraint" = "red", "L"="gray", "Policy value"="black")) +
+  #   theme_minimal()
   
-  ggsave(paste0("images/",type_simu,"/beta_evol_",option[1],"_",option[2],".pdf"),beta_evol)
+  # ggsave(paste0("images/",type_simu,"/beta_evol_",option[1],"_",option[2],".pdf"),beta_evol)
 }
 
 policy_value_plot<-  function(results,type_simu, lambda_opt, beta_opt, option){
@@ -187,7 +214,6 @@ gamma_plot_funct <- function(psi_X, lambda, beta, df, option, centered) {
 }
 
 geom_points_fct <- function(results, idx_opt, df, type_simu, option, centered=TRUE){
-
   lambda_discr <- which(results$beta==results$beta[idx_opt])[as.integer(seq(1, length(which(results$beta==results$beta[idx_opt])), length.out=10))]
   
   plots <- lapply(lambda_discr, function(x) gamma_plot_funct(results$optimal_x[[x]], results$lambda[[x]], results$beta[[x]], df,option, centered))
@@ -198,16 +224,15 @@ geom_points_fct <- function(results, idx_opt, df, type_simu, option, centered=TR
   final_plot <- plot_grid(combined_plots, legend, ncol=1, rel_heights = c(5,2))
   # Display the final plot
   print(final_plot)
-  ggsave(paste0("images/",type_simu,"/geom_points_lambda_",option[1],"_",option[2],".pdf"),final_plot)
+  ggsave(paste0("images/",type_simu,"/geom_points_lambda_",option[1],"_",option[2],".pdf"),final_plot, width = 16, height = 10)
   
   plot_none<-gamma_plot_funct(results$optimal_x[[1]], results$lambda[[1]], results$beta[[1]], df,option, centered)
   plot_min <- gamma_plot_funct(results$optimal_x[[idx_opt-1]], results$lambda[[idx_opt-1]], results$beta[[idx_opt-1]], df,option, centered)
   plot_max <- gamma_plot_funct(results$optimal_x[[idx_opt]], results$lambda[[idx_opt]], results$beta[[idx_opt]], df,option, centered)
 
   opt_plots <- plot_grid(plot_none, plot_min,plot_max, ncol=3)
-  ggsave(paste0("images/",type_simu,"/geom_points_lambda_opt_",option[1],"_",option[2],".pdf"),opt_plots)
-  
-  
+  ggsave(paste0("images/",type_simu,"/geom_points_lambda_opt_",option[1],"_",option[2],".pdf"),opt_plots, width = 16, height = 8)
+
 }
 
 gamma_lambda_plot <- function(results, df, type_simu, option, centered=TRUE){
