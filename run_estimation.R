@@ -73,7 +73,7 @@ combination_results <- mclapply(1:nrow(param_combinations), function(i) {
 #Theta_df <- as.data.frame(do.call(rbind, lapply(combination_results, `[[`, 2)))
 
 #save_policies_to_csv(Theta_df)
-saveRDS(Combination_results, file = "opt_results/estimation/Combination_results.rds")
+saveRDS(combination_results, file = "opt_results/estimation/Combination_results.rds")
 Thetas <- lapply(combination_results, `[[`, 2)
 Causal_contrast <- lapply(combination_results, `[[`, 1)
 
@@ -88,7 +88,7 @@ res<-mclapply(1:nrow(param_combinations), function(i) {
     centered,alpha)
 }, mc.cores = detectCores(), mc.preschedule = FALSE) 
 
-saveRDS(res, file = "opt_results/estimation/res.rds")
+saveRDS(res, file = "opt_results/estimation/1-res.rds")
 results <- as.data.frame(do.call(rbind, res))
 
 # Save the results to a CSV file
@@ -114,7 +114,7 @@ lambda_evol(
 
 
 optimal_x <- as.numeric(results[idx_opt, ]$optimal_x[[1]])
-p <- gamma_plot_funct(optimal_x, results$lambda[idx_opt], results$beta[idx_opt], df, option, centered)
+p <- gamma_plot_funct(optimal_x, results$lambda[[idx_opt]], results$beta[idx_opt], df, option, centered)
 ggsave("images/estimation/optimal_policy.pdf",p)
 
 #geom_points_fct(results%>%filter(fold==results$fold[[idx_opt]]), idx_opt, df, "estimation", option, centered=TRUE)
