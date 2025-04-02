@@ -80,6 +80,7 @@ SGD <- function(X, theta_current, lambda, beta, centered, psi, verbose){
 
   batch_size <- as.integer(n / 3)
 
+  LprimeX <-  gradL(psi, X, lambda, beta, centered, delta_Y, delta_Z)
   for(i in 1:max_iter){
     s <- sample.int(n, batch_size)
     x <- X[s,]
@@ -88,15 +89,14 @@ SGD <- function(X, theta_current, lambda, beta, centered, psi, verbose){
     expit_theta_x <- expit(theta_x)
     expit_diff <- 2 * expit_theta_x * (1 - expit_theta_x)
 
-    Lprime <- gradL(psi, x, lambda, beta, centered, delta_Y, delta_Z)
+    Lprime <-LprimeX[s]
     dL_dtheta <- t(t(x) %*% (expit_diff * Lprime))
 
-    if (verbose && i %% 100 == 0) {
+    if (verbose && i %% 500 == 0) {
             theta_X <- X %*% t(theta_current)
             expit_theta_X_full <- expit(theta_X)
             expit_Diff <- 2 * expit_theta_X_full * (1 - expit_theta_X_full)
 
-            LprimeX <- gradL(psi, X, lambda, beta, centered, delta_Y, delta_Z)
             Whole_Grad <- t(t(X) %*% (expit_Diff * LprimeX))
 
             if (mean(Whole_Grad) < tol) {
@@ -144,7 +144,7 @@ FW <- function(X, lambda, beta, alpha, delta_Y, delta_Z, precision, verbose=TRUE
 
       psi <- make_psi(theta)
         
-        if (verbose && k %% 10 == 0) {
+        if (verbose && k %% 20 == 0) {
             msg <- sprintf("FW: iteration %i, value %f", k, L(psi, X, lambda, beta, alpha, centered, delta_Y, delta_Z))
             message(msg)
         }

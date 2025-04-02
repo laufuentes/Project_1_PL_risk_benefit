@@ -7,4 +7,4 @@ OAR -q production \
 
 module load conda
 conda activate myenv
-Rscript run_estimation.R
+Rscript run_estimation_Tlearner.R

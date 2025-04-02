@@ -11,20 +11,18 @@ library(gganimate)
 source("src/synthetic_data.R")
 
 synthetic_setting_plot <- function(df_complete){
-  params <- read_yaml("params.yaml")
-  option <- params$option
   ## Create a the variable for plotting CATE-Y
   df_complete$sign_CATE <- as.factor(
     ifelse(
       delta_Y(
-        df_complete %>% select(starts_with("X")),option
+        df_complete %>% select(starts_with("X"))
       )>0,1,-1
     )
   )
 
   ## Create the CATE-Z variable
-  df_complete$delta_Z <- delta_Z(
-    df_complete %>% select(starts_with("X")),option
+  df_complete$delta_Xi <- delta_Xi(
+    df_complete %>% select(starts_with("X"))
   )
   
   # Plot
@@ -33,12 +31,12 @@ synthetic_setting_plot <- function(df_complete){
       geom_point(alpha = 0.5)
     p0_plot<- ggplot(df_complete, aes(x=X.height, y=X.bmi, color=(p0)))+
       geom_point(alpha = 0.5)+
-      scale_color_gradient(low = "yellow", high = "red", limits = c(0, max(df_complete$p1)))
+      scale_color_gradient(low = "yellow", high = "red", limits = c(0, 1))
     p1_plot<- ggplot(df_complete, aes(x=X.height, y=X.bmi, color=(p1)))+
       geom_point(alpha = 0.5)+
-      scale_color_gradient(low = "yellow", high = "red", limits = c(0, max(df_complete$p1)))
+      scale_color_gradient(low = "yellow", high = "red", limits = c(0, 1))
     
-    p_plot<- ggplot(df_complete, aes(x=X.height, y=X.bmi, color=(delta_Z)))+
+    p_plot<- ggplot(df_complete, aes(x=X.height, y=X.bmi, color=(delta_Xi)))+
       geom_point(alpha = 0.5)+
       scale_color_gradient(low = "blue", high = "green", limits = c(0.1, 0.6))
     
@@ -56,14 +54,14 @@ synthetic_setting_plot <- function(df_complete){
   }else{
     plot_Y_sign<- ggplot(df_complete, aes(x=X.1, y=X.2, color=sign_CATE))+
       geom_point(alpha = 0.5)
-    p0_plot<- ggplot(df_complete, aes(x=X.1, y=X.2, color=(p0)))+
+    p0_plot<- ggplot(df_complete, aes(x=X.1, y=X.2, color=(Xi_0)))+
       geom_point(alpha = 0.5)+
-      scale_color_gradient(low = "yellow", high = "red", limits = c(min(df_complete$p0), max(df_complete$p1)))
-    p1_plot<- ggplot(df_complete, aes(x=X.1, y=X.2, color=(p1)))+
+      scale_color_gradient(low = "yellow", high = "red", limits = c(0,1))
+    p1_plot<- ggplot(df_complete, aes(x=X.1, y=X.2, color=(Xi_1)))+
       geom_point(alpha = 0.5)+
-      scale_color_gradient(low = "yellow", high = "red", limits = c(min(df_complete$p0), max(df_complete$p1)))
+      scale_color_gradient(low = "yellow", high = "red", limits = c(0, 1))
     
-    p_plot<- ggplot(df_complete, aes(x=X.1, y=X.2, color=(delta_Z)))+
+    p_plot<- ggplot(df_complete, aes(x=X.1, y=X.2, color=(delta_Xi)))+
       geom_point(alpha = 0.5)+
       scale_color_gradient(low = "blue", high = "green")
     combined_plot <- grid.arrange(

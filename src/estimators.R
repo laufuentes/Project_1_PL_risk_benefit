@@ -275,7 +275,7 @@ SGD_estimation <- function(df, theta_current, lambda, beta, centered, psi, e_n, 
     dJ_dtheta <- t(x) %*% (expit_diff * Jprime) / batch_size
     dJ_dtheta <- t(t(x) %*% (expit_diff * Jprime))
 
-    if (verbose && i %% 100 == 0) {
+    if (verbose && i %% 1000 == 0) {
             if (mean(dJ_dtheta) < tol) {
                 break
             }
@@ -327,7 +327,7 @@ FW_estimation <- function(df, lambda,  beta, centered, e_n, mu_n, nu_n,precision
 
       psi <- make_psi(theta)
        
-        if (verbose && k %% 10 == 0) {
+        if (verbose && k %% 20 == 0) {
           e_xa <- e_n(A,X)
           mu_xa<-mu_n(A,X)
           nu_xa<- nu_n(A,X)

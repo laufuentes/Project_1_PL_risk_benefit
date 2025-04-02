@@ -59,10 +59,12 @@ e.hat.nj <- initial_nparams[[2]]
 mu.hat.nj <- initial_nparams[[3]]
 nu.hat.nj <- initial_nparams[[4]]
 
+mc_cores_used <- 24
+
 combination_results <- mclapply(1:nrow(param_combinations), function(i) {
     if(i%%100==0){print(i)}
   algo_combination(param_combinations[i,])
-}, mc.cores = detectCores(),mc.preschedule = FALSE)
+}, mc.cores =mc_cores_used, mc.preschedule = TRUE)
 
 
 # RowCountsDF <- data.frame(
@@ -86,9 +88,9 @@ res<-mclapply(1:nrow(param_combinations), function(i) {
     process_policy(i,param_combinations,Thetas,X,mu.hat.nj,
     Causal_contrast,
     centered,alpha)
-}, mc.cores = detectCores(), mc.preschedule = FALSE) 
+}, mc.cores =mc_cores_used,mc.preschedule = TRUE)
 
-saveRDS(res, file = "opt_results/estimation/1-res.rds")
+saveRDS(res, file = "opt_results/estimation/res.rds")
 results <- as.data.frame(do.call(rbind, res))
 
 # Save the results to a CSV file
@@ -123,6 +125,7 @@ ggsave("images/estimation/optimal_policy.pdf",p)
 
 
 # To load them back later:
-# loaded_Thetas <- readRDS("opt_results/estimation/Thetas.rds")
-# loaded_Causal_contrast <- readRDS("opt_results/estimation/Causal_contrast.rds")
-#loaded_res <- readRDS("opt_results/estimation/res.rds")
+combination_results <- readRDS("opt_results/estimation/Combination_results.rds")
+Thetas <- readRDS("opt_results/estimation/Thetas.rds")
+Causal_contrast <- readRDS("opt_results/estimation/Causal_contrast.rds")
+res <- readRDS("opt_results/estimation/res.rds")
