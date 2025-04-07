@@ -10,6 +10,7 @@ library(tidyverse)
 # Load or generate needed data
 centered <- TRUE   # or FALSE, depending on your use case
 alpha <- 0.05
+precision <- 0.025
 
 # Adjust these paths as needed
 Lambda <- readRDS("opt_results/data/Lambda.rds")
@@ -24,8 +25,8 @@ X <- df_complete %>% select(starts_with("X.")) %>% as.matrix()
 
 
 # Run optimization for this index
-policy <- optimize_combination(i, param_combinations)
-res <- process_policy(i, param_combinations, list(policy), X,
+policy <- optimize_combination(i, param_combinations,delta_Y, delta_Xi)
+res <- parallelized_process_policy(i, param_combinations, list(policy), X,
                       list(df_complete$y1, df_complete$y0), delta_Y, delta_Xi, centered, alpha)
 
 # Save the result

@@ -1,7 +1,0 @@
-images/*
-opt_results/*
-*.RData
-*.RDataTmp*
-
-maybe_useful_someday/*
-OAR*
