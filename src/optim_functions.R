@@ -1,14 +1,9 @@
 library(tidyverse)
-library(optimx)
-library(lbfgs)
-library(boot)
-library(graphics)
-library(ggplot2)
-library(grid)
-library(rgenoud)
 library(roxygen2)
-library(madness)
 
+source("src/objective_functions.R")
+expit <- plogis
+logit <- qlogis
 #' Generate Psi Function
 #'
 #' Constructs a convex combination function \code{psi} based on the sequence of solutions
@@ -62,13 +57,14 @@ make_psi <- function(Theta) {
 #' @param lambda A numeric scalar controlling the weight of the constraint function in the objective.
 #' @param beta A numeric scalar controlling the sharpness of the probability function.
 #' @param centered A logical value indicating whether to center the policy.
+#' @param delta_Y A function of \code{X} that determines the difference between primary counterfactual outcomes.
+#' @param delta_Xi A function of \code{X} that determines the difference between secondary counterfactual outcomes.
 #' @param psi A function that takes X as input.
-#' @param lr A numeric scalar (learning rate).
 #' @param verbose A logical value indicating whether to print progress.
 #'
 #' @return A numeric matrix of size 1 x d (optimized parameters).
 #' @export
-SGD <- function(X, theta_current, lambda, beta, centered, psi, verbose){
+SGD <- function(X, theta_current, lambda, beta, centered, delta_Y, delta_Xi, psi, verbose){
   n <- nrow(X)
   max_iter <- 1e3
   tol <- 1e-3
@@ -80,7 +76,7 @@ SGD <- function(X, theta_current, lambda, beta, centered, psi, verbose){
 
   batch_size <- as.integer(n / 3)
 
-  LprimeX <-  gradL(psi, X, lambda, beta, centered, delta_Y, delta_Z)
+  LprimeX <-  gradL(psi, X, lambda, beta, centered, delta_Y, delta_Xi)
   for(i in 1:max_iter){
     s <- sample.int(n, batch_size)
     x <- X[s,]
@@ -124,14 +120,15 @@ SGD <- function(X, theta_current, lambda, beta, centered, psi, verbose){
 #' @param beta A numeric scalar controlling the sharpness of the probability function.
 #' @param alpha A numeric scalar (constraint tolerance).
 #' @param delta_Y A function of \code{X} that determines the difference between primary counterfactual outcomes.
-#' @param delta_Z A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param delta_Xi A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param centered A logical value indicating whether to center the policy.
 #' @param precision A numeric scalar that determines the convergence precision desired.
 #' @param verbose A logical value indicating whether to print progress updates. Default is \code{TRUE}.
 #'
 #' @return A numeric matrix containing the optimized parameter \code{theta},  
 #'         where each row represents the k-th \code{theta} solution at iteration \code{k}.
 #' @export
-FW <- function(X, lambda, beta, alpha, delta_Y, delta_Z, precision, verbose=TRUE) {
+FW <- function(X, lambda, beta, alpha, delta_Y, delta_Xi, centered, precision, verbose=TRUE) {
     K <- as.integer(1/precision)
     tol <- 1e-5
     d <- ncol(X)
@@ -145,11 +142,11 @@ FW <- function(X, lambda, beta, alpha, delta_Y, delta_Z, precision, verbose=TRUE
       psi <- make_psi(theta)
         
         if (verbose && k %% 20 == 0) {
-            msg <- sprintf("FW: iteration %i, value %f", k, L(psi, X, lambda, beta, alpha, centered, delta_Y, delta_Z))
+            msg <- sprintf("FW: iteration %i, value %f", k, L(psi, X, lambda, beta, alpha, centered, delta_Y, delta_Xi))
             message(msg)
         }
         theta_opt <- SGD(X, theta_current=theta_fix, 
-                         lambda, beta, centered, psi, (verbose && k %% 10 == 0))
+                         lambda, beta, centered, delta_Y, delta_Xi, psi, (verbose && k %% 10 == 0))
         
         theta <- rbind(theta, theta_opt)
     }

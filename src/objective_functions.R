@@ -1,5 +1,3 @@
-library(tidyverse)
-library(parallel)
 
 #' Probability of Treating Function
 #'
@@ -23,7 +21,7 @@ sigma_beta <- function(psi, X, beta, centered) {
         cent <- 0
     }
     out <- c_beta * log((1 + exp(beta * psi(X))) / (1 + exp(-beta))) + cent
-    return(out)
+return(out)
 }
 
 #' Derivative of Probability of Treating Function
@@ -37,7 +35,6 @@ sigma_beta <- function(psi, X, beta, centered) {
 #'
 #' @return A numeric vector representing the derivative of \code{sigma_beta} with respect to \code{psi} at X.
 #' @export
-
 sigma_beta_prime <- function(psi, X, beta){
     if (!is.matrix(X)) {
     X <- as.matrix(X)
@@ -47,10 +44,6 @@ sigma_beta_prime <- function(psi, X, beta){
       )
     out <- c_beta *(beta*exp(beta*psi(X)))/(1+ exp(beta*psi(X)))
     return(out)
-}
-
-expit_prime <- function(X){
-  expit(X)*(1-expit(X))
 }
 
 #' Risk Function for Conditional Average Treatment Effect (CATE)
@@ -79,12 +72,12 @@ R_p <- function(psi, X, delta_Y){
 #' @param beta A numeric scalar controlling the sharpness of the probability function.
 #' @param alpha A numeric scalar representing the constraint tolerance.
 #' @param centered A logical value indicating whether to apply centering in \code{sigma_beta}.
-#' @param delta_Z A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param delta_Xi A function of \code{X} that determines the difference between secondary counterfactual outcomes.
 #'
 #' @return A numeric scalar representing the constraint function value.
 #' @export
-S_p <- function(psi, X, beta, alpha, centered, delta_Z){
-    out <- mean(sigma_beta(psi,X, beta, centered) * delta_Z(X)) - alpha
+S_p <- function(psi, X, beta, alpha, centered, delta_Xi){
+    out <- mean(sigma_beta(psi,X, beta, centered) * delta_Xi(X)) - alpha
     return(out)
 }
 
@@ -100,12 +93,12 @@ S_p <- function(psi, X, beta, alpha, centered, delta_Z){
 #' @param alpha A numeric scalar representing the constraint tolerance.
 #' @param centered A logical value indicating whether to apply centering in \code{sigma_beta}.
 #' @param delta_Y A function of \code{X} that determines the difference between primary counterfactual outcomes.
-#' @param delta_Z A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param delta_Xi A function of \code{X} that determines the difference between secondary counterfactual outcomes.
 #'
 #' @return A numeric scalar representing the objective function value.
 #' @export
-L <- function(psi, X,lambda, beta, alpha, centered, delta_Y, delta_Z){
-    out <- R_p(psi, X,delta_Y) + lambda*S_p(psi, X, beta, alpha, centered, delta_Z)
+L <- function(psi, X,lambda, beta, alpha, centered, delta_Y, delta_Xi){
+    out <- R_p(psi, X,delta_Y) + lambda*S_p(psi, X, beta, alpha, centered, delta_Xi)
     return(out)
 }
 
@@ -120,12 +113,12 @@ L <- function(psi, X,lambda, beta, alpha, centered, delta_Y, delta_Z){
 #' @param beta A numeric scalar controlling the sharpness of the probability function.
 #' @param centered A logical value indicating whether to apply centering in \code{sigma_beta}.
 #' @param delta_Y A function of \code{X} that determines the difference between primary counterfactual outcomes.
-#' @param delta_Z A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param delta_Xi A function of \code{X} that determines the difference between secondary counterfactual outcomes.
 #'
 #' @return A numeric vector representing the gradient of the objective function with respect to \code{psi(X)}.
 #' @export
-gradL <- function(psi, X, lambda, beta, centered, delta_Y, delta_Z){
-  2*(psi(X) - delta_Y(X)) + lambda*sigma_beta_prime(psi,X, beta)*delta_Z(X)
+gradL <- function(psi, X, lambda, beta, centered, delta_Y, delta_Xi){
+  2*(psi(X) - delta_Y(X)) + lambda*sigma_beta_prime(psi,X, beta)*delta_Xi(X)
 }
 
 #' Expected Policy Outcome
@@ -148,7 +141,7 @@ gradL <- function(psi, X, lambda, beta, centered, delta_Y, delta_Z){
 #' @return A numeric scalar representing the expected outcome under the policy.
 #' @export
 policy_values <- function(psi, X,counterfactual_outcomes,beta,centered,alpha){
-  sigma_psi <- sigma_beta(psi, X, beta, centered)
+  sigma_psi <-sigma_beta(psi, X, beta, centered)
   policy <- rbinom(nrow(X), 1, sigma_psi)
   y1 <- counterfactual_outcomes[1]
   y0 <- counterfactual_outcomes[2]
