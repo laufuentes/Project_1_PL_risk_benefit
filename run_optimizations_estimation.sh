@@ -6,16 +6,18 @@ NUM_COMBOS=$(Rscript -e 'Lambda <- readRDS("opt_results/data/Lambda.rds"); B <- 
 echo "Starting optimization for $NUM_COMBOS parameter combinations..."
 
 # Create results directory if it doesn't exist
-mkdir -p opt_results/oracular/indiv_res
+#mkdir -p opt_results/estimation_T/indiv_res
 
 # Loop over each parameter index and submit a job for each optimization
 for ((i=1; i<=NUM_COMBOS; i++)); do
   echo "[$(date +'%H:%M:%S')] Submitting job for optimization index $i..."
   # Submit the job using oarsub (requesting 12 cores per job)
-  oarsub -l "host=1/core=12" -n "opt_job_$i" \
-    "module load conda && conda activate myenv && Rscript run_optimization.R $i > /dev/null 2> /dev/null"
+  oarsub -l "host=1/core=12" \
+  -O /dev/null -E /dev/null\
+    "module load conda && conda activate myenv && Rscript run_optimization_estimation.R $i"
 done
-oarsub -l "host=1/core=12" -n  "Est_final_output"\
- "module load conda && conda activate myenv && Rscript load_results.R $i > /dev/null 2> /dev/null"
+oarsub -l "host=1/core=12" \
+  -O /dev/null -E /dev/null\
+ "module load conda && conda activate myenv && Rscript load_results_est.R $i"
 
 echo "All optimization jobs submitted."

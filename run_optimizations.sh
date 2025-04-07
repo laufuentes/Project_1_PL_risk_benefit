@@ -13,9 +13,11 @@ for ((i=1; i<=NUM_COMBOS; i++)); do
   echo "[$(date +'%H:%M:%S')] Submitting job for optimization index $i..."
   # Submit the job using oarsub (requesting 12 cores per job)
   oarsub -l "host=1/core=12"\
-    "module load conda && conda activate myenv && Rscript run_optimization.R $i > /dev/null 2> /dev/null"
+    -O /dev/null -E /dev/null \
+    "module load conda && conda activate myenv && Rscript run_optimization.R $i"
 done
 oarsub -l "host=1/core=12" \
- "module load conda && conda activate myenv && Rscript load_results.R $i > /dev/null 2> /dev/null"
+  -O /dev/null -E /dev/null\
+  "module load conda && conda activate myenv && Rscript load_results.R"
 
 echo "All optimization jobs submitted."

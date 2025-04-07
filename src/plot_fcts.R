@@ -123,7 +123,7 @@ geom_points_fct <- function(results, idx_opt, df, type_simu, centered){
   final_plot <- plot_grid(combined_plots, legend, ncol=1, rel_heights = c(5,2))
   # Display the final plot
   print(final_plot)
-  ggsave(paste0("images/",type_simu,"/optimal_solution_multiple_lambdas.pdf"),final_plot, width = 8, height = 6)
+  ggsave(paste0("images/",type_simu,"/optimal_solution_multiple_lambdas.pdf"),final_plot, width = 10, height = 6)
   
   plot_none<-gamma_plot_funct(results$optimal_x[[1]], results$lambda[[1]], results$beta[[1]], df, centered)+theme(legend.position = "none")
   plot_max <- gamma_plot_funct(results$optimal_x[[idx_opt]], results$lambda[[idx_opt]], results$beta[[idx_opt]], df, centered)+theme(legend.position = "none")
