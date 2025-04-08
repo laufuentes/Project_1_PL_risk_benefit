@@ -6,6 +6,7 @@ if (is.na(i)) stop("Need a valid integer index.")
 # Load required packages
 library(parallel)
 library(tidyverse)
+library(grf)
 
 # Load or generate needed data
 centered <- TRUE   # or FALSE, depending on your use case
@@ -28,8 +29,16 @@ df <- read.csv("opt_results/estimation_T/df.csv",stringsAsFactors = FALSE)
 X <- df %>% select(starts_with("X.")) %>% as.matrix()
 
 s <- readRDS("opt_results/data/s.rds")
-Delta_mu_nj_folds <- readRDS("opt_results/data/Delta_mu_nj_folds.rds")
-Delta_nu_nj_folds <- readRDS("opt_results/data/Delta_nu_nj_folds.rds")
+mu.hat.nj <- readRDS("opt_results/data/mu.hat.nj.rds")
+nu.hat.nj <- readRDS("opt_results/data/nu.hat.nj.rds")
+
+Delta_mu_nj_folds <- lapply(mu.hat.nj, function(mu.nj) {
+  function(X) mu.nj(1, X) - mu.nj(0, X)
+})
+
+Delta_nu_nj_folds <- lapply(nu.hat.nj, function(nu.nj) {
+  function(X) nu.nj(1, X) - nu.nj(0, X)
+})
 CC_mu <-readRDS("opt_results/data/CC_mu.rds")
 CC_nu<-readRDS("opt_results/data/CC_nu.rds")
 
@@ -41,6 +50,6 @@ res <- parallelized_process_policy(i, param_combinations, list(policy), X,
                       Delta_mu_nj_folds[[param_combinations$Fold[[i]]]], 
                       Delta_nu_nj_folds[[param_combinations$Fold[[i]]]], 
                       centered, alpha)
-
+                      
 # Save the result
 saveRDS(res, file = paste0("opt_results/estimation_T/indiv_res/res_", i, ".rds"))

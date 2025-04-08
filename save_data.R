@@ -13,7 +13,7 @@ write.csv(df_complete,paste0("opt_results/oracular/df_complete.csv"))
 write.csv(df,paste0("opt_results/estimation_T/df.csv"))
 
 
-lambda <- seq(0,10,1) 
+lambda <- seq(0,15,1) 
 saveRDS(lambda, file = "opt_results/data/Lambda.rds")
 
 B <- c(0.05, 0.25,0.5,1,1.5,2)
