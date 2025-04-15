@@ -15,20 +15,20 @@ precision <- 0.025
 technique<- "probability.forest"
 
 # Adjust these paths as needed
-Jfold <- readRDS("results/data/Jfolds.rds")
+Jfold <- readRDS(file.path("results","data","Jfolds.rds"))
 
-param_combinations <- readRDS("results/data/grid_est.rds")
+param_combinations <- readRDS(file.path("results","data","grid_est.rds"))
 
 
 # Define or load necessary functions
-source("src/algorithm_architecture.R") 
-source("src/synthetic_data.R")
-df <- read.csv("opt_results/estimation_T/df.csv",stringsAsFactors = FALSE)
+source(file.path("src","algorithm_architecture.R")) 
+source(file.path("src","synthetic_data.R"))
+df <- read.csv(file.path("results","estimated","df.csv"),stringsAsFactors = FALSE)
 X <- df %>% select(starts_with("X.")) %>% as.matrix()
 
-s <- readRDS("results/data/s.rds")
-mu.hat.nj <- readRDS("results/data/mu.hat.nj.rds")
-nu.hat.nj <- readRDS("results/data/nu.hat.nj.rds")
+s <- readRDS(file.path("results","data","s.rds"))
+mu.hat.nj <- readRDS(file.path("results","data","mu.hat.nj.rds"))
+nu.hat.nj <- readRDS(file.path("results","data","nu.hat.nj.rds"))
 
 Delta_mu_nj_folds <- lapply(mu.hat.nj, function(mu.nj) {
   function(X) mu.nj(1, X) - mu.nj(0, X)
@@ -37,8 +37,8 @@ Delta_mu_nj_folds <- lapply(mu.hat.nj, function(mu.nj) {
 Delta_nu_nj_folds <- lapply(nu.hat.nj, function(nu.nj) {
   function(X) nu.nj(1, X) - nu.nj(0, X)
 })
-CC_mu <-readRDS("results/data/CC_mu.rds")
-CC_nu<-readRDS("results/data/CC_nu.rds")
+CC_mu <-readRDS(file.path("results","data","CC_mu.rds"))
+CC_nu<-readRDS(file.path("results","data","CC_nu.rds"))
 
 # Run optimization for this index
 policy <- optimize_combination_Tlearner(i, param_combinations, Delta_mu_nj_folds, Delta_nu_nj_folds)
@@ -50,4 +50,4 @@ res <- parallelized_process_policy(i, param_combinations, list(policy), X,
                       centered, alpha)
                       
 # Save the result
-saveRDS(res, file = paste0("results/estimation_T/individual_results/res_", i, ".rds"))
+saveRDS(res, file = file.path("results","estimated","individual_results",paste0("res_", i, ".rds")))
