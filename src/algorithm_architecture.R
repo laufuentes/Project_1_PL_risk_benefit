@@ -8,16 +8,16 @@ library(tidyverse)
 #'
 #' @param i Integer index indicating which parameter combination to use.
 #' @param param_combinations A data frame containing combinations of `lambda` and `beta` values.
-#' @param delta_Y A function of estimated treatment effect contrasts (`mu`) by fold.
-#' @param delta_Xi A function of estimated constraint components (`nu`) by fold.
+#' @param delta_Mu A function of estimated treatment effect contrasts (`mu`) by fold.
+#' @param delta_Nu A function of estimated constraint components (`nu`) by fold.
 #'
-#' @return A vector of optimized policy parameters (`theta`).
+#' @return A vector of optimized policy paameters (`theta`).
 #' @export
-optimize_combination <- function(i, param_combinations, delta_Y, delta_Xi){
+optimize_combination <- function(i, param_combinations, delta_Mu, delta_Nu){
   thetas <- FW(X, 
   param_combinations$lambda[i], 
   param_combinations$beta[i], 
-  alpha, delta_Y, delta_Xi, centered, precision)
+  alpha, delta_Mu, delta_Nu, centered, precision)
   return(thetas) 
 }
 
@@ -54,7 +54,7 @@ parallelized_process_policy <- function(
      thetas,
      covariates,
      counterfacts,
-     delta_Y, delta_Xi,
+     delta_Mu, delta_Nu,
      centered,
      alpha) {
      # Extract the policy for the current index
@@ -64,14 +64,14 @@ parallelized_process_policy <- function(
          lambda = param_combinations$lambda[idx],
          beta = param_combinations$beta[idx],
          optimal_x = I(list(psi(covariates))), # I() wraps the list to avoid issues with data frames
-         risk = R_p(psi, covariates, delta_Y),
+         risk = R_p(psi, covariates, delta_Mu),
          constraint = S_p(
              psi,
              covariates,
              param_combinations$beta[idx],
-             alpha, centered, delta_Xi
+             alpha, centered, delta_Nu
              ),
-         obj = L(psi, covariates,param_combinations$lambda[idx], param_combinations$beta[idx], alpha, centered, delta_Y, delta_Xi),
+         obj = L(psi, covariates,param_combinations$lambda[idx], param_combinations$beta[idx], alpha, centered, delta_Mu, delta_Nu),
          policy_value = policy_values(
            psi,
            covariates, 
@@ -102,8 +102,8 @@ parallelized_process_policy <- function(
 #' @param thetas List of policy parameter vectors (output of `optimize_combination`).
 #' @param covariates A matrix of covariates used to evaluate the policy.
 #' @param counterfacts A list of counterfactual outcomes (e.g., `y1`, `y0`).
-#' @param delta_Y A function of estimated treatment effect contrasts (`mu`) by fold.
-#' @param delta_Xi A function of estimated constraint components (`nu`) by fold.
+#' @param delta_Mu A function of estimated treatment effect contrasts (`mu`) by fold.
+#' @param delta_Nu A function of estimated constraint components (`nu`) by fold.
 #' @param centered Logical; whether to center the features.
 #' @param alpha Constraint tolerance (typically between 0 and 1).
 #'
@@ -121,7 +121,7 @@ process_policy <- function(
     thetas,
     covariates,
     counterfacts,
-    delta_Y, delta_Xi,
+    delta_Mu, delta_Nu,
     centered,
     alpha) {
     # Extract the policy for the current index
@@ -131,14 +131,14 @@ process_policy <- function(
         lambda = param_combinations$lambda[idx],
         beta = param_combinations$beta[idx],
         optimal_x = I(list(psi(covariates))), # I() wraps the list to avoid issues with data frames
-        risk = R_p(psi, covariates, delta_Y),
+        risk = R_p(psi, covariates, delta_Mu),
         constraint = S_p(
             psi,
             covariates,
             param_combinations$beta[idx],
-            alpha, centered, delta_Xi
+            alpha, centered, delta_Nu
             ),
-        obj = L(psi, covariates,param_combinations$lambda[idx], param_combinations$beta[idx], alpha, centered, delta_Y, delta_Xi),
+        obj = L(psi, covariates,param_combinations$lambda[idx], param_combinations$beta[idx], alpha, centered, delta_Mu, delta_Nu),
         policy_value = policy_values(
           psi,
           covariates, 

@@ -24,7 +24,7 @@ synthetic_setting_plot <- function(df_complete, delta_Y, delta_Xi){
       plot_Y_sign, p_plot,
       ncol = 1  
     )
-  ggsave(paste0("images/synthetic_setting.pdf"),combined_plot)
+  ggsave(paste0("figures/synthetic_setting.pdf"),combined_plot)
 }
 
 lambda_evol<- function(results, type_simu, beta_opt){
@@ -82,7 +82,7 @@ lambda_evol<- function(results, type_simu, beta_opt){
   # ) +
   theme_minimal()+
   guides(fill="none")
-  ggsave(paste0("images/",type_simu,"/lambda_evol.pdf"),lambda_evol)
+  ggsave(paste0("figures/",type_simu,"/lambda_evol.pdf"),lambda_evol)
 }
 
 sigma_beta_fixed <- function(psi_x, beta, centered){
@@ -123,11 +123,11 @@ geom_points_fct <- function(results, idx_opt, df, type_simu, centered){
   final_plot <- plot_grid(combined_plots, legend, ncol=1, rel_heights = c(5,2))
   # Display the final plot
   print(final_plot)
-  ggsave(paste0("images/",type_simu,"/optimal_solution_multiple_lambdas.pdf"),final_plot, width = 10, height = 6)
+  ggsave(paste0("figures/",type_simu,"/optimal_solution_multiple_lambdas.pdf"),final_plot, width = 10, height = 6)
   
   plot_none<-gamma_plot_funct(results$optimal_x[[1]], results$lambda[[1]], results$beta[[1]], df, centered)+theme(legend.position = "none")
   plot_max <- gamma_plot_funct(results$optimal_x[[idx_opt]], results$lambda[[idx_opt]], results$beta[[idx_opt]], df, centered)+theme(legend.position = "none")
 
   opt_plots <- plot_grid(plot_none,plot_max, ncol=2)
-  ggsave(paste0("images/",type_simu,"/optimal_solution_optimal_lambda.pdf"),opt_plots, width = 8, height = 4)
+  ggsave(paste0("figures/",type_simu,"/optimal_solution_optimal_lambda.pdf"),opt_plots, width = 8, height = 4)
 }

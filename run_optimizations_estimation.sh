@@ -10,10 +10,8 @@ get_job_count() {
 
 # Get total number of parameter combinations
 NUM_COMBOS=$(Rscript -e '
-  Lambda <- readRDS("opt_results/data/Lambda.rds"); 
-  B <- readRDS("opt_results/data/B.rds"); 
-  Jfolds <- readRDS("opt_results/data/Jfolds.rds"); 
-  cat(nrow(expand.grid(Fold = 1:Jfolds, lambda = Lambda, beta = B)))')
+  param_grid <- readRDS("results/data/grid_est.rds"); 
+  cat(nrow(param_grid))')
 
 for ((i=1; i<=NUM_COMBOS; i++)); do
   echo "[$(date +'%H:%M:%S')] Submitting job for optimization index $i..."

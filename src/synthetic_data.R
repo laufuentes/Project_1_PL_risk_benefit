@@ -26,13 +26,13 @@ data_gen <- function(n){
   return(list(df_complete, df_obs))
 }
 
-delta_Y <- function(X){
+delta_mu <- function(X){
   n <- nrow(X)
   out <- 0.5*(expit(h_Y(X,rep(1,n)))-expit(h_Y(X,rep(-1,n))))
   return(out)
 }
 
-delta_Xi <- function(X){
+delta_nu <- function(X){
   out <- expit(4*(X[,2]-1/2))
   return(out)
 }
