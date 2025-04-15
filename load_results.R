@@ -1,10 +1,10 @@
 # load_results.R
 library(tidyverse)
 centered <- FALSE
-df <- read.csv("opt_results/oracular/df_complete.csv", stringsAsFactors=FALSE)
+df <- read.csv(file.path("results","oracular","df_complete.csv"), stringsAsFactors=FALSE)
 
  # Directory where individual result files are saved
- res_dir <- "opt_results/oracular/indiv_res"
+ res_dir <- file.path("results/oracular/individual_results")
  
  # List all result files
  res_files <- list.files(res_dir, pattern = "^res_\\d+\\.rds$", full.names = TRUE)
@@ -28,8 +28,8 @@ df <- read.csv("opt_results/oracular/df_complete.csv", stringsAsFactors=FALSE)
 }))
  
  # Save combined results
- saveRDS(results, file = "opt_results/oracular/results.rds")
- write.csv(results%>%select(-optimal_x), file = "opt_results/oracular/results.csv", row.names = FALSE)
+ saveRDS(results, file = "results/oracular/results.rds")
+ write.csv(results%>%select(-optimal_x), file = "results/oracular/results.csv", row.names = FALSE)
 
  idx_opt_obj <- which(
   results$obj == max(results$obj[results$constraint <= 0])
@@ -37,7 +37,7 @@ df <- read.csv("opt_results/oracular/df_complete.csv", stringsAsFactors=FALSE)
 idx_opt <- idx_opt_obj
 
 
-source("src/plot_fcts.R")
+source(file.path("src","plot_fcts.R"))
 lambda_evol(
     results, 
     "oracular", 
