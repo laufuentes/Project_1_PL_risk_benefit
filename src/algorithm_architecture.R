@@ -1,4 +1,4 @@
-source("src/optim_functions.R")
+source(file.path("src","optim_functions.R"))
 library(tidyverse)
 
 #' Optimize Policy Parameters

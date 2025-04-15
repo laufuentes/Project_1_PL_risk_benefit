@@ -1,7 +1,7 @@
 library(tidyverse)
 library(roxygen2)
 
-source("src/objective_functions.R")
+source(file.path("src","objective_functions.R"))
 expit <- plogis
 logit <- qlogis
 #' Generate Psi Function
