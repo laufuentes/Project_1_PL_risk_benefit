@@ -49,16 +49,16 @@ sigma_beta_prime <- function(psi, X, beta){
 #' Risk Function for Conditional Average Treatment Effect (CATE)
 #'
 #' Computes the risk function \eqn{R_p} for estimating the Conditional Average Treatment Effect (CATE).  
-#' The function minimizes the squared error between \code{psi(X)} and \code{delta_Y(X)}.
+#' The function minimizes the squared error between \code{psi(X)} and \code{delta_Mu(X)}.
 #'
 #' @param psi A function that takes a numeric matrix \code{X} as input and returns a numeric vector.
 #' @param X A numeric matrix of size n x d (input data).
-#' @param delta_Y A function of \code{X} that determines the difference between primary counterfactual outcomes.
+#' @param delta_Mu A function of \code{X} that determines the difference between primary counterfactual outcomes.
 #'
 #' @return A numeric scalar representing the risk function value.
 #' @export
-R_p <- function(psi, X, delta_Y){
-    out <- mean(psi(X)^2 - 2 * psi(X)* delta_Y(X))
+R_p <- function(psi, X, delta_Mu){
+    out <- mean(psi(X)^2 - 2 * psi(X)* delta_Mu(X))
     return(out)
 }
 
@@ -72,12 +72,12 @@ R_p <- function(psi, X, delta_Y){
 #' @param beta A numeric scalar controlling the sharpness of the probability function.
 #' @param alpha A numeric scalar representing the constraint tolerance.
 #' @param centered A logical value indicating whether to apply centering in \code{sigma_beta}.
-#' @param delta_Xi A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param delta_Nu A function of \code{X} that determines the difference between secondary counterfactual outcomes.
 #'
 #' @return A numeric scalar representing the constraint function value.
 #' @export
-S_p <- function(psi, X, beta, alpha, centered, delta_Xi){
-    out <- mean(sigma_beta(psi,X, beta, centered) * delta_Xi(X)) - alpha
+S_p <- function(psi, X, beta, alpha, centered, delta_Nu){
+    out <- mean(sigma_beta(psi,X, beta, centered) * delta_Nu(X)) - alpha
     return(out)
 }
 
@@ -92,13 +92,13 @@ S_p <- function(psi, X, beta, alpha, centered, delta_Xi){
 #' @param beta A numeric scalar controlling the sharpness of the probability function.
 #' @param alpha A numeric scalar representing the constraint tolerance.
 #' @param centered A logical value indicating whether to apply centering in \code{sigma_beta}.
-#' @param delta_Y A function of \code{X} that determines the difference between primary counterfactual outcomes.
-#' @param delta_Xi A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param delta_Mu A function of \code{X} that determines the difference between primary counterfactual outcomes.
+#' @param delta_Nu A function of \code{X} that determines the difference between secondary counterfactual outcomes.
 #'
 #' @return A numeric scalar representing the objective function value.
 #' @export
-L <- function(psi, X,lambda, beta, alpha, centered, delta_Y, delta_Xi){
-    out <- R_p(psi, X,delta_Y) + lambda*S_p(psi, X, beta, alpha, centered, delta_Xi)
+L <- function(psi, X,lambda, beta, alpha, centered, delta_Mu, delta_Nu){
+    out <- R_p(psi, X,delta_Mu) + lambda*S_p(psi, X, beta, alpha, centered, delta_Nu)
     return(out)
 }
 
@@ -112,13 +112,13 @@ L <- function(psi, X,lambda, beta, alpha, centered, delta_Y, delta_Xi){
 #' @param lambda A numeric scalar controlling the weight of the constraint function in the objective.
 #' @param beta A numeric scalar controlling the sharpness of the probability function.
 #' @param centered A logical value indicating whether to apply centering in \code{sigma_beta}.
-#' @param delta_Y A function of \code{X} that determines the difference between primary counterfactual outcomes.
-#' @param delta_Xi A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param delta_Mu A function of \code{X} that determines the difference between primary counterfactual outcomes.
+#' @param delta_Nu A function of \code{X} that determines the difference between secondary counterfactual outcomes.
 #'
 #' @return A numeric vector representing the gradient of the objective function with respect to \code{psi(X)}.
 #' @export
-gradL <- function(psi, X, lambda, beta, centered, delta_Y, delta_Xi){
-  2*(psi(X) - delta_Y(X)) + lambda*sigma_beta_prime(psi,X, beta)*delta_Xi(X)
+gradL <- function(psi, X, lambda, beta, centered, delta_Mu, delta_Nu){
+  2*(psi(X) - delta_Mu(X)) + lambda*sigma_beta_prime(psi,X, beta)*delta_Nu(X)
 }
 
 #' Expected Policy Outcome

@@ -7,7 +7,7 @@ source("src/objective_functions.R")
 source("src/algorithm_architecture.R")
 source("src/optim_functions.R")
 source("src/estimation.R")
-source("src/plot_fcts.R")
+source("src/plot_functions.R")
 expit <- plogis
 logit <- qlogis
 

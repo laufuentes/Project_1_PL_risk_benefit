@@ -37,7 +37,7 @@ df <- read.csv(file.path("results","oracular","df_complete.csv"), stringsAsFacto
 idx_opt <- idx_opt_obj
 
 
-source(file.path("src","plot_fcts.R"))
+source(file.path("src","plot_functions.R"))
 lambda_evol(
     results, 
     "oracular", 

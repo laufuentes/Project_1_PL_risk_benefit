@@ -4,20 +4,20 @@ library(cowplot)
 library(tidyverse)
 
 
-synthetic_setting_plot <- function(df_complete, delta_Y, delta_Xi){
+synthetic_setting_plot <- function(df_complete, delta_Mu, delta_Nu){
   df_complete$sign_CATE <- as.factor(
     ifelse(
-      delta_Y(
+      delta_Mu(
         df_complete %>% select(starts_with("X."))
       )>0,1,-1
     )
   )
-  df_complete$delta_Xi <- delta_Xi(
+  df_complete$delta_Nu <- delta_Nu(
     df_complete %>% select(starts_with("X."))
   )
     plot_Y_sign<- ggplot(df_complete, aes(x=X.1, y=X.2, color=sign_CATE))+
       geom_point(alpha = 0.5)
-    p_plot<- ggplot(df_complete, aes(x=X.1, y=X.2, color=(delta_Xi)))+
+    p_plot<- ggplot(df_complete, aes(x=X.1, y=X.2, color=(delta_Nu)))+
       geom_point(alpha = 0.5)+
       scale_color_gradient(low = "blue", high = "green")
     combined_plot <- grid.arrange(
