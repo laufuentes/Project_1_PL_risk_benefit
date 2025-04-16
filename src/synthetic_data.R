@@ -3,7 +3,9 @@ set.seed(2025)
 #Required libraries
 library(tidyverse)
 library(dplyr)
-
+set.seed(2025)
+expit <- plogis
+logit <- qlogis
 #' h_Y: Treatment Effect on Y Component Function
 #'
 #' Computes a linear interaction term between covariates and treatment.
@@ -16,11 +18,12 @@ library(dplyr)
 #' X <- matrix(runif(10*2), 10, 2)
 #' A <- rep(1, 10)
 #' h_Y(X, A)
+#' @export
 h_Y<- function(X,A){
   return(2*(1- X[,1]-X[,2])*A)
 }
 
-#' data_gen: Synthetic Data Generator
+#' Synthetic Data Generator
 #'
 #' Generates a dataset simulating treatment assignment, covariates, and potential outcomes.
 #'
@@ -32,10 +35,11 @@ h_Y<- function(X,A){
 #' data <- data_gen(100)
 #' head(data[[1]])  # complete data
 #' head(data[[2]])  # observed data
+#' @export
 data_gen <- function(n){
-  Treatment <- rbinom(n,1,0.5)
-  X <- matrix(runif(n*10,0,1),n,10)
-  epsilon_Y <- rnorm(n,0,1)
+  Treatment <- stats::rbinom(n,1,0.5)
+  X <- matrix(stats::runif(n*10,0,1),n,10)
+  epsilon_Y <- stats::rnorm(n,0,1)
 
   Y.1 <- 0.5 * expit(1 - 2*X[,1] + X[,2] - X[,3] + epsilon_Y) + 
     0.5 * expit(h_Y(X,rep(1,n)))
@@ -43,14 +47,14 @@ data_gen <- function(n){
     0.5 * expit(h_Y(X,rep(-1,n)))
     
   p1 <- expit(4*(X[,2]-1/2))
-  Xi.1<- rbinom(n,1,p1)
+  Xi.1<- stats::rbinom(n,1,p1)
   Xi.0<- rep(0,n)
   df_complete <- data.frame(X=X,Treatment,y1=Y.1,y0=Y.0,Xi.1=Xi.1,Xi.0=Xi.0)
   df_obs<- data.frame(X=X,Treatment,Y=ifelse(Treatment==1,Y.1,Y.0),Xi=ifelse(Treatment==1,Xi.1,Xi.0))
   return(list(df_complete, df_obs))
 }
 
-#' delta_mu: Conditional Average Treatment Effect Estimator for Y
+#' Conditional Average Treatment Effect Estimator for Y
 #'
 #' Computes the difference in expected Y outcomes under treatment and control, using \code{h_Y}.
 #'
@@ -60,6 +64,7 @@ data_gen <- function(n){
 #' @examples
 #' X <- matrix(runif(10*2), 10, 2)
 #' delta_mu(X)
+#' @export
 delta_mu <- function(X){
   n <- nrow(X)
   out <- 0.5*(expit(h_Y(X,rep(1,n)))-expit(h_Y(X,rep(-1,n))))
@@ -67,7 +72,7 @@ delta_mu <- function(X){
 }
 
 
-#' delta_nu: Conditional Average Treatment Effect Estimator for Xi
+#' Conditional Average Treatment Effect Estimator for Xi
 #'
 #' Computes the difference in expected outcomes under treatment and control.
 #'
@@ -77,6 +82,7 @@ delta_mu <- function(X){
 #' @examples
 #' X <- matrix(runif(10*2), 10, 2)
 #' delta_nu(X)
+#' @export
 delta_nu <- function(X){
   out <- expit(4*(X[,2]-1/2))
   return(out)

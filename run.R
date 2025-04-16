@@ -40,14 +40,14 @@ df_complete <- exp[[1]]
 df <- exp[[2]]
 X <- df %>% select(starts_with("X.")) %>% as.matrix()
 
-synthetic_setting_plot(df_complete, delta_Y,delta_Xi)
+synthetic_setting_plot(df_complete, delta_mu,delta_nu)
 
 ##################################
 ## Oracular nuisance parameters ##
 ##################################
 policies <- mclapply(1:nrow(param_combinations), function(i) {
     if(i%%100==0){print(i)}
-  optimize_combination(i, param_combinations, delta_Y, delta_Xi)
+  optimize_combination(i, param_combinations, delta_mu, delta_nu,X, alpha, centered, precision)
 }, mc.cores = cores_used-2, mc.preschedule=FALSE)
 
 res_or<-mclapply(1:nrow(param_combinations), function(i) {
@@ -109,7 +109,7 @@ for (fold in 1:Jfold) {
 
 policies <- mclapply(1:nrow(param_combinations_est), function(i) {
     if(i%%100==0){print(i)}
-  optimize_combination_Tlearner(i, param_combinations_est, Delta_mu_nj_folds, Delta_nu_nj_folds)
+  optimize_combination_Tlearner(i, param_combinations_est, Delta_mu_nj_folds, Delta_nu_nj_folds, df, s, alpha,centered, precision)
 }, mc.cores = cores_used-2, mc.preschedule=FALSE)
 
 res<-mclapply(1:nrow(param_combinations_est), function(i) {
@@ -155,9 +155,10 @@ lambda_evol(
     result_T$beta[[idx_opt]]
 )
 
-theta_lambda0 <- Final_policy(0, 0.05,X, s, lambda<- 5
+theta_lambda0 <- Final_policy(0, 0.05,X, s, Delta_mu_nj_folds, Delta_nu_nj_folds, alpha, centered, precision)
+lambda<- 5
 beta <- 0.55
-theta_opt <- Final_policy(lambda, beta,X, s, Delta_mu_nj_folds, Delta_nu_nj_folds)
+theta_opt <- Final_policy(lambda, beta,X, s, Delta_mu_nj_folds, Delta_nu_nj_folds, alpha, centered, precision)
 optimal_psi <- make_psi(theta_opt)
 optimal_x <- optimal_psi(X))
 psi0<- make_psi(theta_lambda0)

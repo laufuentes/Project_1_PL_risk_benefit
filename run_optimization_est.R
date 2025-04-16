@@ -41,7 +41,7 @@ CC_mu <-readRDS(file.path("results","data","CC_mu.rds"))
 CC_nu<-readRDS(file.path("results","data","CC_nu.rds"))
 
 # Run optimization for this index
-policy <- optimize_combination_Tlearner(i, param_combinations, Delta_mu_nj_folds, Delta_nu_nj_folds)
+policy <- optimize_combination_Tlearner(i, param_combinations, Delta_mu_nj_folds, Delta_nu_nj_folds, df, s, alpha, centered, precision)
 res <- parallelized_process_policy(i, param_combinations, list(policy), X,
                       c(CC_mu[[param_combinations$Fold[[i]]]],
                       CC_nu[[param_combinations$Fold[[i]]]]), 

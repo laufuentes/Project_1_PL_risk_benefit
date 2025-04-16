@@ -23,7 +23,7 @@ X <- df_complete %>% select(starts_with("X.")) %>% as.matrix()
 
 
 # Run optimization for this index
-policy <- optimize_combination(i, param_combinations,delta_mu, delta_nu)
+policy <- optimize_combination(i, param_combinations,delta_mu, delta_nu,X,alpha,centered,precision)
 res <- parallelized_process_policy(i, param_combinations, list(policy), X,
                       list(df_complete$y1, df_complete$y0), delta_mu, delta_nu, centered, alpha)
 

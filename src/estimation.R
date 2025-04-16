@@ -43,7 +43,7 @@ partition_data <- function(n.folds, df){
 #' \dontrun{
 #' set.seed(123)
 #' X <- matrix(rnorm(100 * 5), ncol = 5)
-#' Treatment <- rbinom(100, 1, 0.5)
+#' Treatment <- stats::rbinom(100, 1, 0.5)
 #' Y <- rnorm(100)
 #' s <- sample(1:5, 100, replace = TRUE)
 #' mu_functions <- train_cond_mean(s, X, Treatment, Y)
@@ -55,6 +55,7 @@ partition_data <- function(n.folds, df){
 train_cond_mean <- function(s, X, Treatment,Y){
   n_obs <- dim(X)[1]
 
+  `%>%`<- magrittr::`%>%`
   if (!is.matrix(X)) {
     X <- as.matrix(X)
   }
@@ -62,7 +63,7 @@ train_cond_mean <- function(s, X, Treatment,Y){
   if (!is.matrix(Y)) {
     Y <- as.matrix(Y)
   }
-mus <- mclapply(sort(unique(s)),function(folds){
+mus <- parallel::mclapply(sort(unique(s)),function(folds){
     idx <- which(s == folds) 
     Tr <- Treatment[-idx]
     XX <- X[-idx,]
@@ -72,15 +73,15 @@ mus <- mclapply(sort(unique(s)),function(folds){
 
     Y_nj1 <- YY[which(Tr==1)]
     Y_nj0<- YY[which(Tr==0)]
-    mod_nj1<- regression_forest(X = X_nj1,Y = Y_nj1)
-    mod_nj0 <- regression_forest(X = X_nj0,Y = Y_nj0)
+    mod_nj1<- grf::regression_forest(X = X_nj1,Y = Y_nj1)
+    mod_nj0 <- grf::regression_forest(X = X_nj0,Y = Y_nj0)
 
     mu <- function(a,X){
-      pred_X1 <- predict(mod_nj1,newdata = X)$predictions %>% as.vector()
-      pred_X0 <- predict(mod_nj0,newdata = X)$predictions %>%as.vector()
+      pred_X1 <- stats::predict(mod_nj1,newdata = X)$predictions %>% as.vector()
+      pred_X0 <- stats::predict(mod_nj0,newdata = X)$predictions %>%as.vector()
       return(a*pred_X1 + (1-a)*pred_X0)}
     list(folds, mu)}, 
-    mc.cores = detectCores(), 
+    mc.cores = parallel::detectCores(), 
     mc.preschedule = FALSE)
 
   mu.hat <- unlist(lapply(mus, `[[`, 2))
@@ -105,15 +106,21 @@ mus <- mclapply(sort(unique(s)),function(folds){
 #' @examples
 #' \dontrun{
 #' set.seed(123)
-#' df <- data.frame(X1 = rnorm(100), X2 = rnorm(100), Treatment = rbinom(100, 1, 0.5), Y = rnorm(100), Z = rbinom(100, 1, 0.5))
+#' df <- data.frame(
+#' X1 = rnorm(100), 
+#' X2 = rnorm(100), 
+#' Treatment = stats::rbinom(100, 1, 0.5), 
+#' Y = stats::rnorm(100), 
+#' Z = stats::rbinom(100, 1, 0.5))
 #' s <- sample(1:5, 100, replace = TRUE)
 #' nuisance_params <- nuissance_params(s, df, "cv.glmnet")
 #' }
 #' @export
 nuissance_params <- function(s, df, technique){
+  `%>%`<- magrittr::`%>%`
   n <- nrow(df)
 
-  X <- df%>%select(starts_with("X."))
+  X <- df%>%dplyr::select(dplyr::starts_with("X."))
   Treatment <- df$Treatment
  Y <- df$Y
   Xi <- df$Xi

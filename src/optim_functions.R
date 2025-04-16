@@ -10,20 +10,21 @@ logit <- qlogis
 #' obtained from the Frank-Wolfe (FW) algorithm. Each new solution \code{theta} contributes  
 #' to \code{psi} in the form \eqn{2 \cdot \text{expit}(X \theta) - 1}.
 #'
-#' @param Theta A numeric matrix of size K x d, where each row represents the k-th solution  
+#' @param Theta A numeric matrix of size k x d, where each row represents the k-th solution  
 #'        \code{theta} obtained from the inner minimization in the FW algorithm.
 #'
 #' @return A function that computes \code{psi} for a given input matrix \code{x},  
 #'         using a convex combination of past solutions.
 #' @export
 make_psi <- function(Theta) {
-  # Theta: K x d
+  # Theta: k x d
   # gamma: real
   ## ------------
   ## lazy version
   ## ------------
   psi_iterative <- function(x) {
     # x: n x d
+    K <- nrow(Theta)
     Theta_x <- x %*% t(Theta)
     psi_x <- 2*expit(Theta_x[,1])-1
     weights <- rep(0,K)
@@ -132,7 +133,7 @@ FW <- function(X, lambda, beta, alpha, delta_Mu, delta_Nu, centered, precision, 
     K <- as.integer(1/precision)
     tol <- 1e-5
     d <- ncol(X)
-    theta_fix <- matrix(runif(d, -5, 5), ncol=d, nrow=1)
+    theta_fix <- matrix(stats::runif(d, -5, 5), ncol=d, nrow=1)
     theta <- theta_fix
     #psi_terms <- list(list(weight = 1, func = function(X) { psi_theta(X, theta_init) }))
     

@@ -63,11 +63,11 @@ lambda_evol(
 
 source(file.path("src","algorithm_architecture.R"))
 
-theta_lambda0 <- Final_policy(0, results$beta[[idx_opt]],X, s,  Delta_mu_nj_folds, Delta_nu_nj_folds)
+theta_lambda0 <- Final_policy(0, results$beta[[idx_opt]],X, s,  Delta_mu_nj_folds, Delta_nu_nj_folds,alpha, centered, precision)
 psi0<- make_psi(theta_lambda0)
 psi_x0 <- psi0(X)
 
-theta_opt <- Final_policy(lambda, results$lambda[[idx_opt]],X, s, Delta_mu_nj_folds, Delta_nu_nj_folds)
+theta_opt <- Final_policy(lambda, results$lambda[[idx_opt]],X, s, Delta_mu_nj_folds, Delta_nu_nj_folds, alpha, centered, precision)
 optimal_psi <- make_psi(theta_opt)
 optimal_x <- optimal_psi(X)
 

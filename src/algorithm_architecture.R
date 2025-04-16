@@ -10,10 +10,14 @@ library(tidyverse)
 #' @param param_combinations A data frame containing combinations of `lambda` and `beta` values.
 #' @param delta_Mu A function of estimated treatment effect contrasts (`mu`) by fold.
 #' @param delta_Nu A function of estimated constraint components (`nu`) by fold.
+#' @param X Covariate matrix (n x p) for all units.
+#' @param alpha Constraint tolerance (typically between 0 and 1).
+#' @param centered Logical; whether to center the sigma_beta
+#' @param precision A numeric scalar that determines the convergence precision desired.
 #'
 #' @return A vector of optimized policy paameters (`theta`).
 #' @export
-optimize_combination <- function(i, param_combinations, delta_Mu, delta_Nu){
+optimize_combination <- function(i, param_combinations, delta_Mu, delta_Nu,X,alpha,centered,precision){
   thetas <- FW(X, 
   param_combinations$lambda[i], 
   param_combinations$beta[i], 
@@ -30,13 +34,19 @@ optimize_combination <- function(i, param_combinations, delta_Mu, delta_Nu){
 #' @param param_combinations A data frame containing combinations of hyperparameters (`lambda`, `beta`) and fold IDs.
 #' @param Delta_mu_nj_folds A list of estimated treatment effect contrasts (`mu`) by fold.
 #' @param Delta_nu_nj_folds A list of estimated constraint components (`nu`) by fold.
+#' @param df A data frame containing the covariates, treatment assignment, primary outcome \(Y\), and the secondary outcome \( Xi \).
+#' @param s A vector indicating the fold assignments for each observation.
+#' @param alpha Constraint tolerance (typically between 0 and 1).
+#' @param centered Logical; whether to center the sigma_beta
+#' @param precision A numeric scalar that determines the convergence precision desired.
 #'
 #' @return A vector of optimized policy parameters (`theta`).
 #' @export
-optimize_combination_Tlearner <- function(i, param_combinations, Delta_mu_nj_folds, Delta_nu_nj_folds){
+optimize_combination_Tlearner <- function(i, param_combinations, Delta_mu_nj_folds, Delta_nu_nj_folds,df, s, alpha, centered,precision){
+  `%>%`<- magrittr::`%>%`
   fold <- param_combinations$Fold[[i]]
   data <- df[s!=fold,]
-  X <- data %>% select(starts_with("X.")) %>% as.matrix()
+  X <- data %>% dplyr::select(dplyr::starts_with("X.")) %>% as.matrix()
   lambda <- param_combinations$lambda[[i]]
   beta <- param_combinations$beta[[i]]
   # Step 2: Debias causal contrasts
@@ -195,10 +205,13 @@ process_policy <- function(
 #' @param s A vector indicating fold assignments (length n).
 #' @param Delta_mu_nj_folds A list of fold-specific treatment contrast functions (e.g., T-learner estimates).
 #' @param Delta_nu_nj_folds A list of fold-specific constraint contrast functions.
+#' @param alpha Constraint tolerance (typically between 0 and 1).
+#' @param centered Logical; whether to center the features.
+#' @param precision A numeric scalar that determines the convergence precision desired.
 #'
 #' @return A vector of optimized policy parameters (`theta`) trained across folds.
 #' @export
-Final_policy <- function(lambda, beta,X, s, Delta_mu_nj_folds, Delta_nu_nj_folds){
+Final_policy <- function(lambda, beta,X, s, Delta_mu_nj_folds, Delta_nu_nj_folds, alpha, centered, precision){
   Delta_mu_CV <- function(X){
     out <- rep(0,nrow(X))
     for(fold in unique(s)){
@@ -220,4 +233,5 @@ Final_policy <- function(lambda, beta,X, s, Delta_mu_nj_folds, Delta_nu_nj_folds
   theta_final <- FW(X, lambda, beta, alpha, 
   Delta_mu_CV, Delta_nu_CV, 
   centered, precision)
+  return(theta_final)
 }
