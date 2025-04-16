@@ -48,6 +48,29 @@ optimize_combination_Tlearner <- function(i, param_combinations, Delta_mu_nj_fol
   return(thetas) 
 }
 
+#' Evaluate one result policy for a Given Parameter Combination
+#'
+#' Evaluates a learned policy using performance metrics such as risk, constraint
+#' violation, and objective value. Also computes the policy value using counterfactual outcomes.
+#'
+#' @param idx Index for which parameter combination should be evaluated.
+#' @param param_combinations Data frame of parameter combinations with columns `lambda` and `beta`.
+#' @param thetas List of one policy parameter vectors (output of `optimize_combination`).
+#' @param covariates A matrix of covariates used to evaluate the policy.
+#' @param counterfacts A list of counterfactual outcomes (in order: `y1`, `y0`).
+#' @param delta_Mu A function of estimated treatment effect contrasts (`mu`) by fold.
+#' @param delta_Nu A function of estimated constraint components (`nu`) by fold.
+#' @param centered Logical; whether to center the sigma_beta
+#' @param alpha Constraint tolerance (typically between 0 and 1).
+#'
+#' @return A data frame with one row containing:
+#' - `lambda`, `beta`: hyperparameters
+#' - `optimal_x`: list of decisions from policy
+#' - `risk`: risk metric
+#' - `constraint`: constraint satisfaction metric
+#' - `obj`: objective value
+#' - `policy_value`: estimated policy value
+#' @export
 parallelized_process_policy <- function(
      idx,
      param_combinations,
