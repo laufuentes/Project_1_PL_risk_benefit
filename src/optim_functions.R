@@ -53,19 +53,20 @@ make_psi <- function(Theta) {
 #'
 #' Performs stochastic gradient descent to optimize the parameters.
 #'
-#' @param X A numeric matrix of size n x d (input data).
 #' @param theta_current A numeric matrix of size 1 x d (intialization for parameter to estimate).
-#' @param lambda A numeric scalar controlling the weight of the constraint function in the objective.
-#' @param beta A numeric scalar controlling the sharpness of the probability function.
-#' @param centered A logical value indicating whether to center the policy.
+#' @param psi A function that takes X as input.
+#' @param X A numeric matrix of size n x d (input data).
 #' @param delta_Mu A function of \code{X} that determines the difference between primary counterfactual outcomes.
 #' @param delta_Nu A function of \code{X} that determines the difference between secondary counterfactual outcomes.
-#' @param psi A function that takes X as input.
+#' @param lambda A numeric scalar controlling the weight of the constraint function in the objective.
+#' @param alpha A numeric scalar (constraint tolerance).
+#' @param beta A numeric scalar controlling the sharpness of the probability function.
+#' @param centered A logical value indicating whether to center the policy.
 #' @param verbose A logical value indicating whether to print progress.
 #'
 #' @return A numeric matrix of size 1 x d (optimized parameters).
 #' @export
-SGD <- function(X, theta_current, lambda, beta, centered, delta_Mu, delta_Nu, psi, verbose){
+SGD <- function(theta_current, psi, X, delta_Mu, delta_Nu, lambda, alpha, beta, centered, verbose){
   n <- nrow(X)
   max_iter <- 1e3
   tol <- 1e-3
@@ -77,7 +78,7 @@ SGD <- function(X, theta_current, lambda, beta, centered, delta_Mu, delta_Nu, ps
 
   batch_size <- as.integer(n / 3)
 
-  LprimeX <-  gradL(psi, X, lambda, beta, centered, delta_Mu, delta_Nu)
+  LprimeX <-  grad_Lagrangian_p(psi, X, delta_Mu, delta_Nu, lambda, alpha, beta, centered)
   for(i in 1:max_iter){
     s <- sample.int(n, batch_size)
     x <- X[s,]
@@ -117,11 +118,11 @@ SGD <- function(X, theta_current, lambda, beta, centered, delta_Mu, delta_Nu, ps
 #' in the form \eqn{2 \cdot \text{expit}(X \theta) - 1}.
 #'
 #' @param X A numeric matrix (input data).
-#' @param lambda A numeric scalar controlling the weight of the constraint function in the objective.
-#' @param beta A numeric scalar controlling the sharpness of the probability function.
-#' @param alpha A numeric scalar (constraint tolerance).
 #' @param delta_Mu A function of \code{X} that determines the difference between primary counterfactual outcomes.
 #' @param delta_Nu A function of \code{X} that determines the difference between secondary counterfactual outcomes.
+#' @param lambda A numeric scalar controlling the weight of the constraint function in the objective.
+#' @param alpha A numeric scalar (constraint tolerance).
+#' @param beta A numeric scalar controlling the sharpness of the probability function.
 #' @param centered A logical value indicating whether to center the policy.
 #' @param precision A numeric scalar that determines the convergence precision desired.
 #' @param verbose A logical value indicating whether to print progress updates. Default is \code{TRUE}.
@@ -129,7 +130,7 @@ SGD <- function(X, theta_current, lambda, beta, centered, delta_Mu, delta_Nu, ps
 #' @return A numeric matrix containing the optimized parameter \code{theta},  
 #'         where each row represents the k-th \code{theta} solution at iteration \code{k}.
 #' @export
-FW <- function(X, lambda, beta, alpha, delta_Mu, delta_Nu, centered, precision, verbose=TRUE) {
+FW <- function(X, delta_Mu, delta_Nu, lambda, alpha, beta, centered, precision, verbose=TRUE) {
     K <- as.integer(1/precision)
     tol <- 1e-5
     d <- ncol(X)
@@ -143,11 +144,11 @@ FW <- function(X, lambda, beta, alpha, delta_Mu, delta_Nu, centered, precision, 
       psi <- make_psi(theta)
         
         if (verbose && k %% 20 == 0) {
-            msg <- sprintf("FW: iteration %i, value %f", k, L(psi, X, lambda, beta, alpha, centered, delta_Mu, delta_Nu))
+            msg <- sprintf("FW: iteration %i, value %f", k, Lagrangian_p(psi, X, delta_Mu, delta_Nu, lambda, alpha, beta, centered))
             message(msg)
         }
-        theta_opt <- SGD(X, theta_current=theta_fix, 
-                         lambda, beta, centered, delta_Mu, delta_Nu, psi, (verbose && k %% 10 == 0))
+        theta_opt <- SGD(theta_current=theta_fix, psi, X, delta_Mu, delta_Nu,
+                         lambda, alpha, beta, centered, (verbose && k %% 10 == 0))
         
         theta <- rbind(theta, theta_opt)
     }
