@@ -13,7 +13,7 @@ alpha <- 0.05
 precision <- 0.025
 
 # Adjust these paths as needed
-param_combinations<- readRDS(file.path("src","grid_or.rds"))
+param_combinations<- readRDS(file.path("results","data","grid_or.rds"))
 
 # Define or load necessary functions
 source(file.path("src","algorithm_architecture.R")) 

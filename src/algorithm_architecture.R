@@ -1,27 +1,25 @@
 source(file.path("src","optim_functions.R"))
 library(tidyverse)
-
 #' Optimize Policy Parameters
 #'
 #' Computes optimized policy parameters (`theta`) for a specific combination of
 #' regularization hyperparameters using the full dataset and given causal contrasts.
 #'
 #' @param i Integer index indicating which parameter combination to use.
-#' @param param_combinations A data frame containing combinations of `lambda` and `beta` values.
+#' @param X Covariate matrix (n x p) for all units.
 #' @param delta_Mu A function of estimated treatment effect contrasts (`mu`) by fold.
 #' @param delta_Nu A function of estimated constraint components (`nu`) by fold.
-#' @param X Covariate matrix (n x p) for all units.
-#' @param alpha Constraint tolerance (typically between 0 and 1).
+#' @param param_combinations A data frame containing combinations of `lambda` and `beta` values.
 #' @param centered Logical; whether to center the sigma_beta
+#' @param alpha Constraint tolerance (typically between 0 and 1).
 #' @param precision A numeric scalar that determines the convergence precision desired.
 #'
 #' @return A vector of optimized policy paameters (`theta`).
 #' @export
-optimize_combination <- function(i, param_combinations, delta_Mu, delta_Nu,X,alpha,centered,precision){
-  thetas <- FW(X, 
-  param_combinations$lambda[i], 
-  param_combinations$beta[i], 
-  alpha, delta_Mu, delta_Nu, centered, precision)
+optimize_combination <- function(i, X, delta_Mu, delta_Nu, param_combinations, centered, alpha,precision){
+  thetas <- FW(X, delta_Mu, delta_Nu, 
+  param_combinations$lambda[i], alpha,
+  param_combinations$beta[i], centered, precision)
   return(thetas) 
 }
 
@@ -31,18 +29,18 @@ optimize_combination <- function(i, param_combinations, delta_Mu, delta_Nu,X,alp
 #' parameter combination using T-learner estimates of causal contrasts.
 #'
 #' @param i Integer index indicating which parameter combination to use.
-#' @param param_combinations A data frame containing combinations of hyperparameters (`lambda`, `beta`) and fold IDs.
-#' @param Delta_mu_nj_folds A list of estimated treatment effect contrasts (`mu`) by fold.
-#' @param Delta_nu_nj_folds A list of estimated constraint components (`nu`) by fold.
 #' @param df A data frame containing the covariates, treatment assignment, primary outcome \(Y\), and the secondary outcome \( Xi \).
 #' @param s A vector indicating the fold assignments for each observation.
+#' @param Delta_mu_nj_folds A list of estimated treatment effect contrasts (`mu`) by fold.
+#' @param Delta_nu_nj_folds A list of estimated constraint components (`nu`) by fold.
+#' @param param_combinations A data frame containing combinations of hyperparameters (`lambda`, `beta`) and fold IDs.
+#' @param centered Logical; whether to center the sigma_beta.
 #' @param alpha Constraint tolerance (typically between 0 and 1).
-#' @param centered Logical; whether to center the sigma_beta
 #' @param precision A numeric scalar that determines the convergence precision desired.
 #'
 #' @return A vector of optimized policy parameters (`theta`).
 #' @export
-optimize_combination_Tlearner <- function(i, param_combinations, Delta_mu_nj_folds, Delta_nu_nj_folds,df, s, alpha, centered,precision){
+optimize_combination_Tlearner <- function(i, df, s, Delta_mu_nj_folds, Delta_nu_nj_folds,param_combinations, centered, alpha,precision){
   `%>%`<- magrittr::`%>%`
   fold <- param_combinations$Fold[[i]]
   data <- df[s!=fold,]
@@ -52,9 +50,8 @@ optimize_combination_Tlearner <- function(i, param_combinations, Delta_mu_nj_fol
   # Step 2: Debias causal contrasts
   Delta_mu_nj <- Delta_mu_nj_folds[[fold]]
   Delta_nu_nj <- Delta_nu_nj_folds[[fold]]
-  thetas <- FW(X, lambda, beta, alpha, 
-  Delta_mu_nj, Delta_nu_nj, 
-  centered, precision)
+  thetas <- FW(X, Delta_mu_nj, Delta_nu_nj, lambda, alpha, 
+               beta, centered, precision)
   return(thetas) 
 }
 
@@ -66,7 +63,7 @@ optimize_combination_Tlearner <- function(i, param_combinations, Delta_mu_nj_fol
 #' @param idx Index for which parameter combination should be evaluated.
 #' @param param_combinations Data frame of parameter combinations with columns `lambda` and `beta`.
 #' @param thetas List of one policy parameter vectors (output of `optimize_combination`).
-#' @param covariates A matrix of covariates used to evaluate the policy.
+#' @param X A matrix of covariates used to evaluate the policy.
 #' @param counterfacts A list of counterfactual outcomes (in order: `y1`, `y0`).
 #' @param delta_Mu A function of estimated treatment effect contrasts (`mu`) by fold.
 #' @param delta_Nu A function of estimated constraint components (`nu`) by fold.
@@ -85,7 +82,7 @@ parallelized_process_policy <- function(
      idx,
      param_combinations,
      thetas,
-     covariates,
+     X,
      counterfacts,
      delta_Mu, delta_Nu,
      centered,
@@ -96,19 +93,17 @@ parallelized_process_policy <- function(
      results <- data.frame(
          lambda = param_combinations$lambda[idx],
          beta = param_combinations$beta[idx],
-         optimal_x = I(list(psi(covariates))), # I() wraps the list to avoid issues with data frames
-         risk = R_p(psi, covariates, delta_Mu),
+         optimal_x = I(list(psi(X))), # I() wraps the list to avoid issues with data frames
+         risk = R_p(psi, X, delta_Mu),
          constraint = S_p(
              psi,
-             covariates,
+             X,
              param_combinations$beta[idx],
              alpha, centered, delta_Nu
              ),
-         obj = L(psi, covariates,param_combinations$lambda[idx], param_combinations$beta[idx], alpha, centered, delta_Mu, delta_Nu),
-         policy_value = policy_values(
+         obj = Lagrangian_p(psi, X,param_combinations$lambda[idx], param_combinations$beta[idx], alpha, centered, delta_Mu, delta_Nu),
+         policy_value = V_p(
            psi,
-           covariates, 
-           c(counterfacts[[1]], counterfacts[[2]]),
            param_combinations$beta[idx],
            centered,
            alpha
@@ -133,7 +128,7 @@ parallelized_process_policy <- function(
 #' @param idx Index for which parameter combination and policy should be evaluated.
 #' @param param_combinations Data frame of parameter combinations with columns `lambda` and `beta`.
 #' @param thetas List of policy parameter vectors (output of `optimize_combination`).
-#' @param covariates A matrix of covariates used to evaluate the policy.
+#' @param X A matrix of covariates used to evaluate the policy.
 #' @param counterfacts A list of counterfactual outcomes (e.g., `y1`, `y0`).
 #' @param delta_Mu A function of estimated treatment effect contrasts (`mu`) by fold.
 #' @param delta_Nu A function of estimated constraint components (`nu`) by fold.
@@ -152,7 +147,7 @@ process_policy <- function(
     idx,
     param_combinations,
     thetas,
-    covariates,
+    X,
     counterfacts,
     delta_Mu, delta_Nu,
     centered,
@@ -163,19 +158,17 @@ process_policy <- function(
     results <- data.frame(
         lambda = param_combinations$lambda[idx],
         beta = param_combinations$beta[idx],
-        optimal_x = I(list(psi(covariates))), # I() wraps the list to avoid issues with data frames
-        risk = R_p(psi, covariates, delta_Mu),
+        optimal_x = I(list(psi(X))), # I() wraps the list to avoid issues with data frames
+        risk = R_p(psi, X, delta_Mu),
         constraint = S_p(
             psi,
-            covariates,
+            X,
             param_combinations$beta[idx],
             alpha, centered, delta_Nu
             ),
-        obj = L(psi, covariates,param_combinations$lambda[idx], param_combinations$beta[idx], alpha, centered, delta_Mu, delta_Nu),
-        policy_value = policy_values(
+        obj = Lagrangian_p(psi, X, delta_Mu, delta_Nu, param_combinations$lambda[idx], alpha, param_combinations$beta[idx], centered),
+        policy_value = V_p(
           psi,
-          covariates, 
-          c(counterfacts[[1]], counterfacts[[2]]),
           param_combinations$beta[idx],
           centered,
           alpha
@@ -230,8 +223,7 @@ Final_policy <- function(lambda, beta,X, s, Delta_mu_nj_folds, Delta_nu_nj_folds
     }
     return(out)
   }
-  theta_final <- FW(X, lambda, beta, alpha, 
-  Delta_mu_CV, Delta_nu_CV, 
-  centered, precision)
+  theta_final <- FW(X, Delta_mu_CV, Delta_nu_CV, lambda, alpha, 
+                    beta, centered, precision)
   return(theta_final)
 }

@@ -85,40 +85,6 @@ lambda_evol <- function(results, type_simu, beta_opt) {
   ggplot2::ggsave(file.path("figures", type_simu, "lambda_evol.pdf"), lambda_evol_plot)
 }
 
-#' Smoothed Decision Function With Fixed Beta
-#'
-#' Computes a smooth transformation of a score vector `psi_x` using the `beta` parameter
-#' and an optional centering to ensure the output lies within the interval 0 to 1.
-#'
-#' This function applies a logistic-type transformation to the input vector, and the
-#' centering option allows adjusting the output to have a mean of 0.5 when `psi_x` is 0.
-#' The function also ensures that the smoothed probabilities are bounded within the interval 0 to 1.
-#'
-#' @param psi_x A numeric vector of scores (typically a linear predictor).
-#' @param beta A numeric smoothing parameter, typically between 0 and 1.
-#' @param centered Logical; if TRUE, the function centers the output at 0.5 when `psi_x` is 0.
-#'
-#' @return A numeric vector of smoothed probabilities, with values in the range 0 to 1.
-#'
-#' @examples
-#' # Example usage of sigma_beta_fixed
-#' psi_x <- c(-1, 0, 1)
-#' beta <- 0.5
-#' centered <- TRUE
-#' sigma_beta_fixed(psi_x, beta, centered)
-#'
-#' @export
-sigma_beta_fixed <- function(psi_x, beta, centered){
-  c_beta <- 1 / log((1 + exp(beta)) / (1 + exp(-beta)))
-  if (centered) {
-    cent <- 0.5 - c_beta * log(2 / (1 + exp(-beta)))
-  } else {
-    cent <- 0
-  }
-  out <- c_beta * log((1 + exp(beta * psi_x)) / (1 + exp(-beta))) + cent
-  return(out)
-}
-
 #' Visualize Treatment Assignment Probability
 #'
 #' Plots the smoothed treatment assignment probability over covariates X.1 and X.2.
@@ -132,7 +98,7 @@ sigma_beta_fixed <- function(psi_x, beta, centered){
 #' @return A ggplot object.
 #' @export
 gamma_plot_funct <- function(psi_X, lambda, beta, df, centered) {
-  policy <- sigma_beta_fixed(psi_X, beta, centered)
+  policy <- sigma_beta(psi_X, beta, centered)
   # Initialize base plot
   p <- ggplot2::ggplot(
     cbind(df, treat_proba = policy),

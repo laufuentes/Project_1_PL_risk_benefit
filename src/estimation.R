@@ -95,7 +95,6 @@ mus <- parallel::mclapply(sort(unique(s)),function(folds){
 #'
 #' @param s A vector indicating the fold assignments for each observation.
 #' @param df A data frame containing the covariates, treatment assignment, primary outcome \(Y\), and the secondary outcome \( Z \).
-#' @param technique A string specifying the method to use for computing propensity scores, either `"cv.glmnet"` or `"probability_forest"`.
 #' @return A list containing the nuisance parameters functions and relative folds:
 #'   \itemize{
 #'     \item \code{s}: A vector indicating the fold assignments.
@@ -116,7 +115,7 @@ mus <- parallel::mclapply(sort(unique(s)),function(folds){
 #' nuisance_params <- nuissance_params(s, df, "cv.glmnet")
 #' }
 #' @export
-nuissance_params <- function(s, df, technique){
+nuissance_params <- function(s, df){
   `%>%`<- magrittr::`%>%`
   n <- nrow(df)
 

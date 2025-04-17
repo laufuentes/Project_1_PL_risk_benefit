@@ -2,12 +2,7 @@ library(tidyverse)
 library(parallel)
 
 set.seed("2025")
-source("src/synthetic_data.R")
-source("src/objective_functions.R")
-source("src/algorithm_architecture.R")
-source("src/optim_functions.R")
-source("src/estimation.R")
-source("src/plot_functions.R")
+source("src/*")
 expit <- plogis
 logit <- qlogis
 

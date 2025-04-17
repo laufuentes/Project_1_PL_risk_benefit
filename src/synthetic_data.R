@@ -1,9 +1,6 @@
-set.seed(2025)
-
 #Required libraries
 library(tidyverse)
 library(dplyr)
-set.seed(2025)
 expit <- plogis
 logit <- qlogis
 #' h_Y: Treatment Effect on Y Component Function
@@ -28,6 +25,7 @@ h_Y<- function(X,A){
 #' Generates a dataset simulating treatment assignment, covariates, and potential outcomes.
 #'
 #' @param n Number of observations to generate.
+#' @param seed Integer or NA (default value).
 #'
 #' @return A list containing two data frames: \code{df_complete} with all potential outcomes and 
 #' treatment assignments, and \code{df_obs} with observed outcomes based on treatment.
@@ -36,7 +34,10 @@ h_Y<- function(X,A){
 #' head(data[[1]])  # complete data
 #' head(data[[2]])  # observed data
 #' @export
-data_gen <- function(n){
+data_gen <- function(n,seed=NA){
+  if(!is.na(seed)){
+    set.seed(seed)
+  }
   Treatment <- stats::rbinom(n,1,0.5)
   X <- matrix(stats::runif(n*10,0,1),n,10)
   epsilon_Y <- stats::rnorm(n,0,1)

@@ -5,12 +5,12 @@
 #'
 #' @param psi A function that takes a numeric matrix \code{X} as input and returns a numeric vector.
 #' @param X A numeric matrix of size n x d (input data).
-#' @param delta_Y A function of \code{X} that determines the difference between primary counterfactual outcomes.
+#' @param delta_Mu A function of \code{X} that determines the difference between primary counterfactual outcomes.
 #'
 #' @return A numeric scalar representing the risk function value.
 #' @export
-R_p <- function(psi, X, delta_Y){
-    out <- mean(psi(X)^2 - 2 * psi(X)* delta_Y(X))
+R_p <- function(psi, X, delta_Mu){
+    out <- mean(psi(X)^2 - 2 * psi(X)* delta_Mu(X))
     return(out)
 }
 
