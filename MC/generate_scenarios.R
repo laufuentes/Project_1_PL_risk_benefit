@@ -13,7 +13,7 @@ saveRDS(MC_iterations, file = file.path("MC","results","data","MC_iter.rds"))
 for (b in 1:MC_iterations){
     exp <- data_gen(n,seed=1e3+b)
     df_complete <- exp[[1]]
-    write.csv(df_complete,file.path("MC","results","data","oracular",paste0("df_complete", b,".csv")))
+    write.csv(df_complete,file.path("MC","results","data","oracular",paste0("df_complete_", b,".csv")))
     df <- exp[[2]]
     write.csv(df,file.path("MC","results","data","estimated",paste0("df_",b,".csv")))
 }
