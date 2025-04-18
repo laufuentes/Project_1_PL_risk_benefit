@@ -1,4 +1,5 @@
 source(file.path("src","optim_functions.R"))
+source(file.path("src","utils.R"))
 library(tidyverse)
 #' Optimize Policy Parameters
 #'
@@ -55,6 +56,39 @@ optimize_combination_Tlearner <- function(i, df, s, Delta_mu_nj_folds, Delta_nu_
   return(thetas) 
 }
 
+parallelized_process_policy_tlearner <- function(idx, param_combinations, thetas, X, delta_Mu, delta_Nu, mu.nj, centered, alpha) {
+     # Extract the policy for the current index
+     theta <- thetas[[1]]
+     psi <-make_psi(theta)
+     results <- data.frame(
+         lambda = param_combinations$lambda[idx],
+         beta = param_combinations$beta[idx],
+         optimal_x = I(list(psi(X))), # I() wraps the list to avoid issues with data frames
+         risk = R_p(psi, X, delta_Mu),
+         constraint = S_p(
+             psi,
+             X,
+             param_combinations$beta[idx],
+             alpha, centered, delta_Nu
+             ),
+         obj = Lagrangian_p(psi, X,delta_Mu, delta_Nu,param_combinations$lambda[idx], alpha, param_combinations$beta[idx], centered),
+         policy_value = V_p(
+           psi,
+           param_combinations$beta[idx],
+           alpha
+         )
+     )
+     colnames(results) <- c(
+         "lambda",
+         "beta",
+         "optimal_x",
+         "risk",
+         "constraint",
+         "obj",
+         "policy_value")
+     return(results) # Return the updated results for this index
+ }
+
 #' Evaluate one result policy for a Given Parameter Combination
 #'
 #' Evaluates a learned policy using performance metrics such as risk, constraint
@@ -78,15 +112,7 @@ optimize_combination_Tlearner <- function(i, df, s, Delta_mu_nj_folds, Delta_nu_
 #' - `obj`: objective value
 #' - `policy_value`: estimated policy value
 #' @export
-parallelized_process_policy <- function(
-     idx,
-     param_combinations,
-     thetas,
-     X,
-     counterfacts,
-     delta_Mu, delta_Nu,
-     centered,
-     alpha) {
+parallelized_process_policy <- function(idx, param_combinations, thetas, X, delta_Mu, delta_Nu, centered, alpha) {
      # Extract the policy for the current index
      theta <- thetas[[1]]
      psi <-make_psi(theta)
@@ -101,7 +127,7 @@ parallelized_process_policy <- function(
              param_combinations$beta[idx],
              alpha, centered, delta_Nu
              ),
-         obj = Lagrangian_p(psi, X,param_combinations$lambda[idx], param_combinations$beta[idx], alpha, centered, delta_Mu, delta_Nu),
+         obj = Lagrangian_p(psi, X,delta_Mu, delta_Nu,param_combinations$lambda[idx], alpha, param_combinations$beta[idx], centered),
          policy_value = V_p(
            psi,
            param_combinations$beta[idx],

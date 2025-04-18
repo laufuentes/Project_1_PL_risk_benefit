@@ -18,7 +18,7 @@ for (b in 1:MC_iterations){
     write.csv(df,file.path("MC","results","data","estimated",paste0("df_",b,".csv")))
 }
 
-Lambda <- seq(1,8,0.5)
+Lambda <- seq(0,8,0.5)
 saveRDS(Lambda, file = file.path("MC","results","data","Lambda.rds"))
 
 beta <- 0.05

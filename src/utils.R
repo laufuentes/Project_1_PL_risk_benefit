@@ -66,10 +66,27 @@ sigma_beta_prime <- function(t, beta=0.05, centered=FALSE){
 #' @export
 V_p <- function(psi, beta, centered, alpha, B=1e4, seed=NA){
   `%>%`<- magrittr::`%>%`
-  df <- data_gen(B,seed=seed)
-  X <- df%>%dplyr::select(dplyr::starts_with("X."))
+  df <- data_gen(B,seed=seed)[[1]]
+  X <- df%>%dplyr::select(dplyr::starts_with("X."))%>% as.matrix()
   y1 <- df$y1
   y0 <- df$y0
+  
+  psi_X <- psi(X)
+  sigma_psi <-sigma_beta(psi_X, beta, centered)
+  if(!is.na(seed)){
+    set.seed(seed)
+  }
+  action <- stats::rbinom(nrow(X), 1, sigma_psi)
+  out <- mean(action * y1 + (1 - action) * y0)
+  return(out)
+}
+
+V_n <- function(psi,beta,mu.nj,alpha,B=1e4, seed=NA){
+  `%>%`<- magrittr::`%>%`
+  df <- data_gen(B,seed=seed)[[2]]
+  X <- df%>%dplyr::select(dplyr::starts_with("X."))%>% as.matrix()
+  y1 <- mu.nj(1,X)
+  y0 <- mu.nj(0,X)
   
   psi_X <- psi(X)
   sigma_psi <-sigma_beta(psi_X, beta, centered)
