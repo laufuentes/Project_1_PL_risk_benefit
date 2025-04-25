@@ -47,7 +47,7 @@ data_gen <- function(n,seed=NA){
   Y.0 <- 0.5 * expit(1 - 2*X[,1] + X[,2] - X[,3] + epsilon_Y) + 
     0.5 * expit(h_Y(X,rep(-1,n)))
     
-  p1 <- expit(4*(X[,2]-1/2))
+  p1 <- expit(2*(3/2 - X[,1]-X[,2]))
   Xi.1<- stats::rbinom(n,1,p1)
   Xi.0<- rep(0,n)
   df_complete <- data.frame(X=X,Treatment,y1=Y.1,y0=Y.0,Xi.1=Xi.1,Xi.0=Xi.0)
@@ -85,6 +85,6 @@ delta_mu <- function(X){
 #' delta_nu(X)
 #' @export
 delta_nu <- function(X){
-  out <- expit(4*(X[,2]-1/2))
+  out <- expit(2*(3/2 - X[,1]-X[,2]))
   return(out)
 }
