@@ -1,33 +1,31 @@
 .
-├── figures
-│   ├── estimated
-│   └── oracular
-└── results
-    ├── data
-    │   ├── estimated
-    │   ├── Mu
-    │   ├── Nu
-    │   ├── oracular
-    │   └── S
-    ├── estimated
-    │   ├── group_by_ind
-    │   ├── group_by_lambda
-    │   ├── individual_results
-    │   ├── individual_results_per_fold
-    │   ├── lambda_opt
-    │   ├── oracular
-    │   │   ├── group_by_ind
-    │   │   ├── group_by_lambda
-    │   │   ├── lambda_opt
-    │   │   ├── or_individual_results
-    │   │   └── or_individual_results_per_fold
-    │   └── theta_opt
-    └── oracular
-        ├── group_by_ind
-        ├── group_by_lambda
-        ├── individual_results
-        ├── lambda_opt
-        └── theta_opt
-            └── opt
-
-30 directories
+figures
+figures/oracular
+figures/estimated
+results
+results/data
+results/data/Nu
+results/data/S
+results/data/oracular
+results/data/Mu
+results/data/estimated
+results/oracular
+results/oracular/lambda_opt
+results/oracular/theta_opt
+results/oracular/theta_opt/opt
+results/oracular/group_by_lambda
+results/oracular/group_by_ind
+results/oracular/individual_results
+results/estimated
+results/estimated/oracular
+results/estimated/oracular/or_individual_results
+results/estimated/oracular/lambda_opt
+results/estimated/oracular/group_by_lambda
+results/estimated/oracular/or_individual_results_per_fold
+results/estimated/oracular/group_by_ind
+results/estimated/lambda_opt
+results/estimated/theta_opt
+results/estimated/group_by_lambda
+results/estimated/group_by_ind
+results/estimated/individual_results_per_fold
+results/estimated/individual_results

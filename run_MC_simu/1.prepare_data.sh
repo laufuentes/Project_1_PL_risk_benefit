@@ -1,6 +1,6 @@
 #!/bin/bash
 
-folder="NL_delta_mu"
+folder="No_intersection"
 
 while read -r line; do
   mkdir -p "$folder/$line"
@@ -16,7 +16,7 @@ oarsub -l "host=1/core=8" \
 
 # Wait for the data generation to (hopefully) finish
 echo "Waiting for data generation to complete..."
-sleep 30
+sleep 300
 
 B=$(Rscript -e "cat(readRDS(file.path('$folder', 'results', 'data', 'MC_iter.rds')))")
 echo "Starting nuisance parameter computation for $B datasets in scenario '$folder'..."
