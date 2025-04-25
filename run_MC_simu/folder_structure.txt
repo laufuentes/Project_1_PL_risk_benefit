@@ -1,0 +1,33 @@
+.
+├── figures
+│   ├── estimated
+│   └── oracular
+└── results
+    ├── data
+    │   ├── estimated
+    │   ├── Mu
+    │   ├── Nu
+    │   ├── oracular
+    │   └── S
+    ├── estimated
+    │   ├── group_by_ind
+    │   ├── group_by_lambda
+    │   ├── individual_results
+    │   ├── individual_results_per_fold
+    │   ├── lambda_opt
+    │   ├── oracular
+    │   │   ├── group_by_ind
+    │   │   ├── group_by_lambda
+    │   │   ├── lambda_opt
+    │   │   ├── or_individual_results
+    │   │   └── or_individual_results_per_fold
+    │   └── theta_opt
+    └── oracular
+        ├── group_by_ind
+        ├── group_by_lambda
+        ├── individual_results
+        ├── lambda_opt
+        └── theta_opt
+            └── opt
+
+30 directories

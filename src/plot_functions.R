@@ -2,7 +2,7 @@ library(gridExtra)
 library(ggplot2)
 library(cowplot)
 library(tidyverse)
-
+source("src/utils.R")
 
 #' Plot Synthetic Data Setting
 #'
@@ -16,7 +16,7 @@ library(tidyverse)
 #'
 #' @return Saves a plot to "figures/synthetic_setting.pdf".
 #' @export
-synthetic_setting_plot <- function(df_complete, delta_Mu, delta_Nu) {
+synthetic_setting_plot <- function(df_complete, delta_Mu, delta_Nu,filepath) {
   `%>%` <- magrittr::`%>%`
   df_complete$sign_delta_Mu <- as.factor(
     sign(
@@ -35,7 +35,7 @@ synthetic_setting_plot <- function(df_complete, delta_Mu, delta_Nu) {
     plot_Y_sign, p_plot,
     ncol = 1
   )
-  ggplot2::ggsave(file.path("figures", "synthetic_setting.pdf"), combined_plot)
+  ggplot2::ggsave(paste0(filepath, "/synthetic_setting.pdf"), combined_plot)
 }
 
 #' Plot Evolution of Objective Terms Across Lambda Values
@@ -49,7 +49,7 @@ synthetic_setting_plot <- function(df_complete, delta_Mu, delta_Nu) {
 #'
 #' @return Saves a plot to "figures/<type_simu>/lambda_evol.pdf".
 #' @export
-lambda_evol <- function(results, type_simu, beta_opt) {
+lambda_evol <- function(results, type_simu, beta_opt, filepath) {
   results_lambda <- results[which(results$beta == beta_opt), ]
   res <- as.data.frame(results_lambda)
   # lambda plot
@@ -82,7 +82,7 @@ lambda_evol <- function(results, type_simu, beta_opt) {
     ggplot2::theme_minimal() +
     ggplot2::guides(fill = "none")
   
-  ggplot2::ggsave(file.path("figures", type_simu, "lambda_evol.pdf"), lambda_evol_plot)
+  ggplot2::ggsave(paste0(filepath,"/lambda_evol_oracular.pdf"), lambda_evol_plot)
 }
 
 #' Visualize Treatment Assignment Probability
@@ -99,10 +99,13 @@ lambda_evol <- function(results, type_simu, beta_opt) {
 #' @export
 gamma_plot_funct <- function(psi_X, lambda, beta, df, centered) {
   policy <- sigma_beta(psi_X, beta, centered)
-  # Initialize base plot
+  # Combine data and policy values
+  plot_df <- as.data.frame(cbind(df, treat_proba = policy))
+
+  # Plot
   p <- ggplot2::ggplot(
-    cbind(df, treat_proba = policy),
-    ggplot2::aes(x = df$X.1, y = df$X.2, color = df$treat_proba)
+    data = plot_df,
+    ggplot2::aes(x = X.1, y = X.2, color = treat_proba)
   ) +
     ggplot2::geom_point(alpha = 1) +
     ggplot2::scale_color_gradient2(
@@ -116,7 +119,7 @@ gamma_plot_funct <- function(psi_X, lambda, beta, df, centered) {
     ggplot2::labs(title = bquote(lambda == .(lambda) ~ "," ~ beta == .(beta))) +
     ggplot2::theme_minimal() +
     ggplot2::theme(legend.position = "right")
-  return(p)
+    return(p)
 }
 
 #' Plot Optimal Policy Across Discrete Lambda Values
@@ -132,7 +135,7 @@ gamma_plot_funct <- function(psi_X, lambda, beta, df, centered) {
 #'
 #' @return Saves plots in "figures/<type_simu>/".
 #' @export
-geom_points_fct <- function(results, idx_opt, df, type_simu, centered){
+geom_points_fct <- function(results, idx_opt, df, type_simu, centered, filepath){
   lambda_discr <- which(results$beta==results$beta[idx_opt])[as.integer(seq(1, length(which(results$beta==results$beta[idx_opt])), length.out=10))]
   
   plots <- lapply(lambda_discr, function(x) gamma_plot_funct(results$optimal_x[[x]], results$lambda[[x]], results$beta[[x]], df, centered))
@@ -143,11 +146,11 @@ geom_points_fct <- function(results, idx_opt, df, type_simu, centered){
   final_plot <- cowplot::plot_grid(combined_plots, legend, ncol=1, rel_heights = c(5,2))
   # Display the final plot
   print(final_plot)
-  ggplot2::ggsave(file.path("figures",type_simu,"optimal_solution_multiple_lambdas.pdf"),final_plot, width = 10, height = 6)
+  ggplot2::ggsave(paste0(filepath,"/all_geom_points_oracular.pdf"),final_plot, width = 10, height = 6)
   
   plot_none<-gamma_plot_funct(results$optimal_x[[1]], results$lambda[[1]], results$beta[[1]], df, centered)+ggplot2::theme(legend.position = "none")
   plot_max <- gamma_plot_funct(results$optimal_x[[idx_opt]], results$lambda[[idx_opt]], results$beta[[idx_opt]], df, centered)+ggplot2::theme(legend.position = "none")
 
   opt_plots <- cowplot::plot_grid(plot_none,plot_max, ncol=2)
-  ggplot2::ggsave(file.path("figures",type_simu,"optimal_solution_optimal_lambda.pdf"),opt_plots, width = 8, height = 4)
+  ggplot2::ggsave(paste0(filepath,"/optimal_solution_optimal_lambda.pdf"),opt_plots, width = 8, height = 4)
 }

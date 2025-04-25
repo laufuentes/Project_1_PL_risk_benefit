@@ -236,7 +236,7 @@ Final_policy <- function(lambda, beta,X, s, Delta_mu_nj_folds, Delta_nu_nj_folds
     for(fold in unique(s)){
       X_fold <- X[s==fold,]
       delta_mu <- Delta_mu_nj_folds[[fold]]
-      out[s==fold] = delta_mu(X)
+      out[s==fold] = delta_mu(X_fold)
     }
     return(out)
   }
@@ -245,7 +245,7 @@ Final_policy <- function(lambda, beta,X, s, Delta_mu_nj_folds, Delta_nu_nj_folds
     for(fold in unique(s)){
       X_fold <- X[s==fold,]
       delta_nu <- Delta_nu_nj_folds[[fold]]
-      out[s==fold] = delta_nu(X)
+      out[s==fold] = delta_nu(X_fold)
     }
     return(out)
   }
