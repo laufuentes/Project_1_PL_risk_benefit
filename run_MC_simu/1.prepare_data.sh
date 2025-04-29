@@ -1,6 +1,6 @@
 #!/bin/bash
 
-folder="No_intersection"
+folder="NL_both"
 
 while read -r line; do
   mkdir -p "$folder/$line"

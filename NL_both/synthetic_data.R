@@ -18,16 +18,11 @@ logit <- qlogis
 #' @export
 # Non-linear transformation with interactions and periodicity
 h_Y <- function(X, A) {
-  # Define the parameters of the parabola
-  a <- -10  # Controls the opening and steepness
-  c <- 0.5   # Horizontal center
-  d <- 1    # Vertical shift
-
-  # Calculate the "inside/outside" value relative to the parabola
+  a <- -5
+  c <- 0.5
+  d <- 0.6
   parabolic_boundary_value <- X[,2] - (a * (X[,1] - c)^2 + d)
-
-  # The sign of h_Y is positive inside (where parabolic_boundary_value < 0)
-  return(A * (-1) * parabolic_boundary_value)
+  return(A  * (-1) * parabolic_boundary_value)
 }
 
 #' Synthetic Data Generator
