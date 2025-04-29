@@ -6,6 +6,4 @@ opt_results/*
 maybe_useful_someday/*
 OAR*
 
-Simple/results/*
-NL_delta_mu/results/*
-results/*
+**/results/

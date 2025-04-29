@@ -167,7 +167,7 @@ p3 <- ggplot(densities, aes(x = value, fill = source, color = source)) +
        y = "Density") +
   theme_minimal()
 
-ggsave(file.path(folder,"figures","density_comparison.pdf"),p3)
+ggsave(file.path(folder,"figures","density_comparison_sigma_beta.pdf"),p3)
 
 
 quantiles <- seq(0, 1, by = 0.01)
@@ -184,7 +184,7 @@ qq_df <- data.frame(
 )
 
 # Plot ECQF (Cumulative Quantile Function)
-ggplot(qq_df, aes(x = quantile, y = value, color = source, group = source)) +
+qqdf<- ggplot(qq_df, aes(x = quantile, y = value, color = source, group = source)) +
   geom_line(size = 1.2) +
   labs(title = "ECQF: Expected Cumulative Quantile Function",
        x = "Quantile",
@@ -192,9 +192,9 @@ ggplot(qq_df, aes(x = quantile, y = value, color = source, group = source)) +
   theme_minimal() +
   theme(legend.title = element_blank())
 
-ggsave("try.pdf")
+ggsave(file.path(folder,"figures","qqdf.pdf"))
 
-pdf("qq_plot.pdf", width = 8, height = 6)  # You can adjust the width and height
+pdf(file.path(folder,"figures","qq_plot.pdf"), width = 8, height = 6)  # You can adjust the width and height
 
 # Create the QQ plot
 qqplot(oracular_vec, estimated_vec,
@@ -378,5 +378,5 @@ pXi <- ggplot(densities_Xi, aes(x = value, fill = source, color = source)) +
   theme_minimal()
 
 combined_plot_density <- grid.arrange(pY, pXi, ncol =2)
-ggsave(file.path(folder,"figures","density_comparison.pdf"),combined_plot_density)
+ggsave(file.path(folder,"figures","density_comparison_CATE.pdf"),combined_plot_density)
 

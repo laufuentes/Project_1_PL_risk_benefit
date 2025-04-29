@@ -45,7 +45,7 @@ for (fold in 1:Jfold){
   res_or <- parallelized_process_policy(j, param_combinations, list(theta), X, delta_mu, delta_nu, centered, alpha)
   # Save the result
   saveRDS(res, file = file.path(folder,"results","estimated","individual_results_per_fold",paste0("res_", i,"_",j,"_",fold,".rds")))
-  saveRDS(res_or, file = file.path(folder,"results","estimated","or_individual_results_per_fold",paste0("res_", i,"_",j,"_",fold,".rds")))
+  saveRDS(res_or, file = file.path(folder,"results","estimated", "oracular","or_individual_results_per_fold",paste0("res_", i,"_",j,"_",fold,".rds")))
 }
 
 # B <- readRDS(file.path(folder,"results","data","MC_iter.rds"))

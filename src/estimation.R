@@ -88,6 +88,47 @@ mus <- parallel::mclapply(sort(unique(s)),function(folds){
   return(mu.hat)
 }
 
+
+# train_cond_mean <- function(s, X, Treatment, Y, 
+#                             SL.library = c("SL.mean", "SL.glm", "SL.gam", "SL.ranger", "SL.glmnet")) {
+#   n_obs <- nrow(X)
+#   `%>%` <- magrittr::`%>%`
+
+#   if (!is.matrix(X)) X <- as.matrix(X)
+#   if (!is.matrix(Y)) Y <- as.matrix(Y)
+
+#   mus <- parallel::mclapply(sort(unique(s)), function(folds) {
+#     idx <- which(s == folds) 
+#     Tr <- Treatment[-idx]
+#     XX <- X[-idx, , drop = FALSE]
+#     YY <- Y[-idx]
+
+#     X_nj1 <- XX[Tr == 1, , drop = FALSE]
+#     X_nj0 <- XX[Tr == 0, , drop = FALSE]
+
+#     Y_nj1 <- YY[Tr == 1]
+#     Y_nj0 <- YY[Tr == 0]
+
+#     # Fit SuperLearner models
+#     mod_nj1 <- SuperLearner::SuperLearner(Y = Y_nj1, X = as.data.frame(X_nj1), 
+#                                           SL.library = SL.library, family = binomial())
+#     mod_nj0 <- SuperLearner::SuperLearner(Y = Y_nj0, X = as.data.frame(X_nj0), 
+#                                           SL.library = SL.library, family = binomial())
+
+#     mu <- function(a, X_new) {
+#       X_df <- as.data.frame(X_new)
+#       pred_X1 <- predict(mod_nj1, newdata = X_df)$pred %>% as.vector()
+#       pred_X0 <- predict(mod_nj0, newdata = X_df)$pred %>% as.vector()
+#       return(a * pred_X1 + (1 - a) * pred_X0)
+#     }
+
+#     list(folds, mu)
+#   }, mc.cores = parallel::detectCores(), mc.preschedule = FALSE)
+
+#   mu.hat <- unlist(lapply(mus, `[[`, 2))
+#   return(mu.hat)
+# }
+
 #' Compute Nuisance Parameters for Propensity Score and Outcome Models
 #'
 #' This function computes nuisance parameters such as propensity scores and 

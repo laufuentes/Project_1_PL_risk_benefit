@@ -2,7 +2,6 @@
 folder=$(Rscript -e 'cat(readRDS(file.path("run_MC_simu", "current_scenario.rds")))')
 # Now get B from inside that folder
 B=$(Rscript -e "cat(readRDS(file.path('${folder}', 'results', 'data', 'MC_iter.rds')))")
-
 echo "Starting nuisance parameter computation for $B datasets"
 
 oarsub -l "host=1/core=12" \
