@@ -1,6 +1,6 @@
 #!/bin/bash
 
-folder="NL_both"
+folder="Simple"
 
 while read -r line; do
   mkdir -p "$folder/$line"
