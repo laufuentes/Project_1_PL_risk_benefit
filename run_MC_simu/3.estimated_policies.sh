@@ -7,7 +7,7 @@ echo "Starting nuisance parameter computation for $B datasets"
 oarsub -l "host=1/core=12" \
           -O /dev/null -E /dev/null \
           "module load conda && conda activate myenv && Rscript run_MC_simu/R_files/load_res.R"
-
+sleep 180
 for ((i=1; i<=B; i++)); do
     output=$(oarsub -l "host=1/core=12" \
           -O /dev/null -E /dev/null \

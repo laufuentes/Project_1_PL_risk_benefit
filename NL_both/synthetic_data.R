@@ -52,9 +52,9 @@ data_gen <- function(n,seed=NA){
   Y.0 <- 0.05 * expit(epsilon_Y) + 
     0.95 * expit(h_Y(X,rep(-1,n)))
   
-  d <- sqrt((X[,1] - 0.5)^2 + (X[,2] - 0.5)^2)
+  d <- sqrt((X[,1]- 0.5)^2 + (X[,2] - 0.5)^2)
   # Treatment effect is large inside the circle (radius ~ 0.3), low outside
-  p1 <- expit(-20 * (d - 0.3))
+  p1 <- expit(20 * (d - 0.3))
   Xi.1<- stats::rbinom(n,1,p1)
   Xi.0<- rep(0,n)
   df_complete <- data.frame(X=X,Treatment,y1=Y.1,y0=Y.0,Xi.1=Xi.1,Xi.0=Xi.0)
