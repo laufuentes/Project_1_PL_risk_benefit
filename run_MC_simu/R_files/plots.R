@@ -118,34 +118,86 @@ sigma_est <- apply(df_all_psi_est_X,2,sigma_beta)
 df_or <- cbind(df,sb=sigma_or)%>%as.data.frame()
 df_est <- cbind(df,sb=sigma_est)%>%as.data.frame()
 
-simu <- c("oracular","estimated")
-for (type_simu in simu){
-  df_std <- (if (type_simu == "oracular") df_or else df_est) %>%
+df_or_std <- df_or %>%
   rowwise() %>%
-  mutate(std_prob = sd(c_across(starts_with("sb."))))
+  mutate(std_prob = sd(c_across(starts_with("sb."))),
+         type = "oracular")
 
-  p1<- ggplot(df_std, aes(x = X.1, y = X.2, color = std_prob)) +
-    geom_point(size = 1.2) +
-    scale_color_viridis_c() +
-    labs(title = "Treatment Probability Variability Over Iterations",
-        color = "Std Dev") +
-    theme_minimal()
-  ggsave(file.path(folder,"figures",type_simu,"std_treatment_probability.pdf"),p1)
-
-
-  df_mean <- (if (type_simu == "oracular") df_or else df_est) %>%
+df_est_std <- df_est %>%
   rowwise() %>%
-  mutate(mean_prob = mean(c_across(starts_with("sb."))))
+  mutate(std_prob = sd(c_across(starts_with("sb."))),
+         type = "estimated")
 
-  p2<- ggplot(df_mean, aes(x = X.1, y = X.2, color = mean_prob)) +
-    geom_point(size = 1.2) +
-    scale_color_viridis_c() +
-    labs(title = "Treatment Probability Variability Over Iterations",
-        color = "Mean Dev") +
-    theme_minimal()
+df_std_combined <- bind_rows(df_or_std, df_est_std)
 
-  ggsave(file.path(folder,"figures",type_simu,"mean_treatment_probability.pdf"),p2)
-}
+# Ensure global color scale
+std_min <- min(df_std_combined$std_prob, na.rm = TRUE)
+std_max <- max(df_std_combined$std_prob, na.rm = TRUE)
+
+p1 <- ggplot(df_std_combined, aes(x = X.1, y = X.2, color = std_prob)) +
+  geom_point(size = 1.2) +
+  scale_color_viridis_c(limits = c(std_min, std_max)) +
+  facet_wrap(~type) +
+  labs(title = "Treatment Probability Std Deviation",
+       color = "Std Dev") +
+  theme_minimal()
+
+ggsave(file.path(folder, "figures", "std_treatment_probability_combined.pdf"), p1)
+
+df_or_mean <- df_or %>%
+  rowwise() %>%
+  mutate(mean_prob = mean(c_across(starts_with("sb."))),
+         type = "oracular")
+
+df_est_mean <- df_est %>%
+  rowwise() %>%
+  mutate(mean_prob = mean(c_across(starts_with("sb."))),
+         type = "estimated")
+
+df_mean_combined <- bind_rows(df_or_mean, df_est_mean)
+
+# Ensure global color scale
+mean_min <- min(df_mean_combined$mean_prob, na.rm = TRUE)
+mean_max <- max(df_mean_combined$mean_prob, na.rm = TRUE)
+
+p2 <- ggplot(df_mean_combined, aes(x = X.1, y = X.2, color = mean_prob)) +
+  geom_point(size = 1.2) +
+  scale_color_viridis_c(limits = c(mean_min, mean_max)) +
+  facet_wrap(~type) +
+  labs(title = "Treatment Probability Mean",
+       color = "Mean Prob") +
+  theme_minimal()
+
+ggsave(file.path(folder, "figures", "mean_treatment_probability_combined.pdf"), p2)
+
+# simu <- c("oracular","estimated")
+# for (type_simu in simu){
+#   df_std <- (if (type_simu == "oracular") df_or else df_est) %>%
+#   rowwise() %>%
+#   mutate(std_prob = sd(c_across(starts_with("sb."))))
+
+#   p1<- ggplot(df_std, aes(x = X.1, y = X.2, color = std_prob)) +
+#     geom_point(size = 1.2) +
+#     scale_color_viridis_c() +
+#     labs(title = "Treatment Probability Variability Over Iterations",
+#         color = "Std Dev") +
+#     theme_minimal()
+#   ggsave(file.path(folder,"figures",type_simu,"std_treatment_probability.pdf"),p1)
+
+
+#   df_mean <- (if (type_simu == "oracular") df_or else df_est) %>%
+#   rowwise() %>%
+#   mutate(mean_prob = mean(c_across(starts_with("sb."))))
+
+#   p2<- ggplot(df_mean, aes(x = X.1, y = X.2, color = mean_prob)) +
+#     geom_point(size = 1.2) +
+#     scale_color_viridis_c() +
+#     labs(title = "Treatment Probability Variability Over Iterations",
+#         color = "Mean Dev") +
+#     theme_minimal()
+
+#   ggsave(file.path(folder,"figures",type_simu,"mean_treatment_probability.pdf"),p2)
+# }
 
 colnames(sigma_or) <- paste0("or_",1:ncol(sigma_or))
 colnames(sigma_est) <- paste0("est_",1:ncol(sigma_est))
