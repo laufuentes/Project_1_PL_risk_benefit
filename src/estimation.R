@@ -89,6 +89,32 @@ mus <- parallel::mclapply(sort(unique(s)),function(folds){
 }
 
 
+learn_propensity_score <- function(s, X, Treatment){
+  n_obs <- dim(X)[1]
+
+  `%>%`<- magrittr::`%>%`
+  if (!is.matrix(X)) {
+    X <- as.matrix(X)
+  }
+
+  prop_score <- parallel::mclapply(sort(unique(s)),function(folds){
+    idx <- which(s == folds) 
+    Tr <- Treatment[-idx]
+    XX <- X[-idx,]
+    mod_nj <- stats::glm(Tr ~ .-1, data = as.data.frame(XX), family = binomial())
+
+    ps <- function(a,X){
+      X_test <- as.data.frame(X)
+      pred <- stats::predict(mod_nj,newdata = X_test) %>% as.vector()
+      return(a*pred + (1-a)*(1-pred))}
+    list(folds, ps)}, 
+    mc.cores = parallel::detectCores(), 
+    mc.preschedule = FALSE)
+
+  ps.hat <- unlist(lapply(prop_score, `[[`, 2))
+  return(ps.hat)
+}
+
 # train_cond_mean <- function(s, X, Treatment, Y, 
 #                             SL.library = c("SL.mean", "SL.glm", "SL.gam", "SL.ranger", "SL.glmnet")) {
 #   n_obs <- nrow(X)
