@@ -105,7 +105,7 @@ learn_propensity_score <- function(s, X, Treatment){
 
     ps <- function(a,X){
       X_test <- as.data.frame(X)
-      pred <- stats::predict(mod_nj,newdata = X_test) %>% as.vector()
+      pred <- stats::predict(mod_nj,newdata = X_test, type="response") %>% as.vector()
       return(a*pred + (1-a)*(1-pred))}
     list(folds, ps)}, 
     mc.cores = parallel::detectCores(), 

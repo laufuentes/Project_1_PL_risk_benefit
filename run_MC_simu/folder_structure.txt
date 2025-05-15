@@ -9,6 +9,7 @@ results/data/S
 results/data/oracular
 results/data/Mu
 results/data/estimated
+results/data/prop_score
 results/oracular
 results/oracular/lambda_opt
 results/oracular/theta_opt
